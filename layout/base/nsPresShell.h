@@ -520,7 +520,6 @@ protected:
   nsresult CreatePreferenceStyleSheet(void);
   nsresult SetPrefLinkRules(void);
   nsresult SetPrefFocusRules(void);
-  nsresult SetPrefNoFramesRule(void);
 
   // methods for painting a range to an offscreen buffer
 
