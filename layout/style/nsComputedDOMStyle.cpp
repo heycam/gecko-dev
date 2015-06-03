@@ -390,10 +390,12 @@ nsComputedDOMStyle::GetAuthoredPropertyValue(const nsAString& aPropertyName,
 
 /* static */
 already_AddRefed<nsStyleContext>
-nsComputedDOMStyle::GetStyleContextForElement(Element* aElement,
-                                              nsIAtom* aPseudo,
-                                              nsIPresShell* aPresShell,
-                                              StyleType aStyleType)
+nsComputedDOMStyle::GetStyleContextForElement(
+    Element* aElement,
+    nsIAtom* aPseudo,
+    nsIPresShell* aPresShell,
+    StyleType aStyleType,
+    StyleContextResolution aStyleContextResolution)
 {
   // If the content has a pres shell, we must use it.  Otherwise we'd
   // potentially mix rule trees by using the wrong pres shell's style
@@ -410,15 +412,17 @@ nsComputedDOMStyle::GetStyleContextForElement(Element* aElement,
   presShell->FlushPendingNotifications(Flush_Style);
 
   return GetStyleContextForElementNoFlush(aElement, aPseudo, presShell,
-                                          aStyleType);
+                                          aStyleType, aStyleContextResolution);
 }
 
 /* static */
 already_AddRefed<nsStyleContext>
-nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
-                                                     nsIAtom* aPseudo,
-                                                     nsIPresShell* aPresShell,
-                                                     StyleType aStyleType)
+nsComputedDOMStyle::GetStyleContextForElementNoFlush(
+    Element* aElement,
+    nsIAtom* aPseudo,
+    nsIPresShell* aPresShell,
+    StyleType aStyleType,
+    StyleContextResolution aStyleContextResolution)
 {
   MOZ_ASSERT(aElement, "NULL element");
   // If the content has a pres shell, we must use it.  Otherwise we'd
@@ -436,7 +440,8 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
   // XXX the !aElement->IsHTMLElement(nsGkAtoms::area)
   // check is needed due to bug 135040 (to avoid using
   // mPrimaryFrame). Remove it once that's fixed.
-  if (!aPseudo && aStyleType == eAll &&
+  if (aStyleContextResolution == eResolveStyleContext_IfNeeded &&
+      !aPseudo && aStyleType == eAll &&
       !aElement->IsHTMLElement(nsGkAtoms::area)) {
     nsIFrame* frame = nsLayoutUtils::GetStyleFrame(aElement);
     if (frame) {
@@ -453,7 +458,8 @@ nsComputedDOMStyle::GetStyleContextForElementNoFlush(Element* aElement,
   }
 
   // No frame has been created, or we have a pseudo, or we're looking
-  // for the default style, so resolve the style ourselves.
+  // for the default style, or we were asked to create a new style
+  // context, so resolve the style ourselves.
   nsRefPtr<nsStyleContext> parentContext;
   nsIContent* parent = aPseudo ? aElement : aElement->GetParent();
   // Don't resolve parent context for document fragments.

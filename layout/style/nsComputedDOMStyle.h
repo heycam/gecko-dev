@@ -66,6 +66,11 @@ public:
     eAll // Includes all stylesheets
   };
 
+  enum StyleContextResolution {
+    eResolveStyleContext_IfNeeded,
+    eResolveStyleContext_Always
+  };
+
   nsComputedDOMStyle(mozilla::dom::Element* aElement,
                      const nsAString& aPseudoElt,
                      nsIPresShell* aPresShell,
@@ -77,15 +82,22 @@ public:
   }
 
   static already_AddRefed<nsStyleContext>
-  GetStyleContextForElement(mozilla::dom::Element* aElement, nsIAtom* aPseudo,
-                            nsIPresShell* aPresShell,
-                            StyleType aStyleType = eAll);
+  GetStyleContextForElement(
+      mozilla::dom::Element* aElement,
+      nsIAtom* aPseudo,
+      nsIPresShell* aPresShell,
+      StyleType aStyleType = eAll,
+      StyleContextResolution aStyleContextResolution =
+        eResolveStyleContext_IfNeeded);
 
   static already_AddRefed<nsStyleContext>
-  GetStyleContextForElementNoFlush(mozilla::dom::Element* aElement,
-                                   nsIAtom* aPseudo,
-                                   nsIPresShell* aPresShell,
-                                   StyleType aStyleType = eAll);
+  GetStyleContextForElementNoFlush(
+      mozilla::dom::Element* aElement,
+      nsIAtom* aPseudo,
+      nsIPresShell* aPresShell,
+      StyleType aStyleType = eAll,
+      StyleContextResolution aStyleContextResolution =
+        eResolveStyleContext_IfNeeded);
 
   static nsIPresShell*
   GetPresShellForContent(nsIContent* aContent);

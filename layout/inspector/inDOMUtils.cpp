@@ -1087,7 +1087,10 @@ inDOMUtils::GetRuleNodeForElement(dom::Element* aElement,
   presContext->EnsureSafeToHandOutCSSRules();
 
   nsRefPtr<nsStyleContext> sContext =
-    nsComputedDOMStyle::GetStyleContextForElement(aElement, aPseudo, presShell);
+    nsComputedDOMStyle::GetStyleContextForElement(
+        aElement, aPseudo, presShell,
+        nsComputedDOMStyle::eAll,
+        nsComputedDOMStyle::eResolveStyleContext_Always);
   if (sContext) {
     *aRuleNode = sContext->RuleNode();
     sContext.forget(aStyleContext);
