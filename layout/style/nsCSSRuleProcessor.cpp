@@ -1021,6 +1021,9 @@ nsCSSRuleProcessor::nsCSSRuleProcessor(const sheet_array_type& aSheets,
   , mMustGatherDocumentRules(aIsShared)
   , mInRuleProcessorCache(false)
 {
+  if (aIsShared) {
+    printf(" nsCSSRuleProcessor %p %s\n", this, aIsShared ? (const char*) "(shared)" : (const char*) "(not shared)");
+  }
   NS_ASSERTION(!!mScopeElement == (aSheetType == nsStyleSet::eScopedDocSheet),
                "aScopeElement must be specified iff aSheetType is "
                "eScopedDocSheet");
@@ -1031,6 +1034,15 @@ nsCSSRuleProcessor::nsCSSRuleProcessor(const sheet_array_type& aSheets,
 
 nsCSSRuleProcessor::~nsCSSRuleProcessor()
 {
+  if (mIsShared) {
+    printf("~nsCSSRuleProcessor %p %s\n", this, mIsShared ? (const char*) "(shared)" : (const char*) "(not shared)");
+    printf("  in rule processor cache? ");
+    if (mInRuleProcessorCache) {
+      printf("yes\n");
+    } else {
+      printf("no\n");
+    }
+  }
   if (mInRuleProcessorCache) {
     RuleProcessorCache::RemoveRuleProcessor(this);
   }
@@ -3015,6 +3027,9 @@ nsCSSRuleProcessor::ClearRuleCascades()
   // nsPresContext::RebuildAllStyleData).
   RuleCascadeData *data = mRuleCascades;
   mRuleCascades = nullptr;
+  // XXX
+  // mDocumentCacheKey = nsDocumentRuleResultCacheKey();
+  // mDocumentRules.Clear();
   while (data) {
     RuleCascadeData *next = data->mNext;
     delete data;
@@ -3704,6 +3719,7 @@ void
 nsCSSRuleProcessor::AddStyleSetRef()
 {
   MOZ_ASSERT(mIsShared);
+  printf("%p ++mStyleSetRefCnt == %d\n", this, mStyleSetRefCnt + 1);
   if (++mStyleSetRefCnt == 1) {
     RuleProcessorCache::StopTracking(this);
   }
@@ -3713,6 +3729,7 @@ void
 nsCSSRuleProcessor::ReleaseStyleSetRef()
 {
   MOZ_ASSERT(mIsShared);
+  printf("%p --mStyleSetRefCnt == %d\n", this, mStyleSetRefCnt - 1);
   if (--mStyleSetRefCnt == 0 && mInRuleProcessorCache) {
     RuleProcessorCache::StartTracking(this);
   }

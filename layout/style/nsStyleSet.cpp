@@ -508,13 +508,16 @@ nsStyleSet::GatherRuleProcessors(sheetType aType)
         for (int32_t i = 0, i_end = cssSheets.Length(); i < i_end; ++i) {
           cssSheetsRaw.AppendElement(cssSheets[i]);
         }
+        // printf("looking up cache\n");
         nsCSSRuleProcessor* rp =
           RuleProcessorCache::GetRuleProcessor(cssSheetsRaw, PresContext());
+        // printf("  cache had %p\n", rp);
         if (!rp) {
           rp = new nsCSSRuleProcessor(cssSheets, uint8_t(aType), nullptr,
                                       static_cast<nsCSSRuleProcessor*>(
                                        oldRuleProcessor.get()),
                                       true /* aIsShared */);
+          // printf("  new rp %p\n", rp);
           RuleProcessorCache::PutRuleProcessor(
               cssSheetsRaw, rp->TakeDocumentRules(),
               rp->GetDocumentCacheKey(PresContext()), rp);

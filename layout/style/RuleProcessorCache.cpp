@@ -30,9 +30,11 @@ RuleProcessorCache::~RuleProcessorCache()
 {
   UnregisterWeakMemoryReporter(this);
 
+  printf("cache %p going away\n", this);
   for (Entry& e : mEntries) {
     for (DocumentEntry& de : e.mDocumentEntries) {
       if (de.mRuleProcessor->GetExpirationState()->IsTracked()) {
+        printf("stopping tracking %p [cache %p]\n", de.mRuleProcessor.get(), this);
         mExpirationTracker.RemoveObject(de.mRuleProcessor);
       }
       de.mRuleProcessor->SetInRuleProcessorCache(false);
@@ -154,6 +156,28 @@ RuleProcessorCache::DoGetRuleProcessor(const nsTArray<CSSStyleSheet*>& aSheets,
     if (e.mSheets == aSheets) {
       for (DocumentEntry& de : e.mDocumentEntries) {
         if (de.mCacheKey.Matches(aPresContext, e.mDocumentRules)) {
+          /*
+          printf("retrieved cached rule processor %p:\n", de.mRuleProcessor.get());
+          printf("  style sheets:\n");
+          for (CSSStyleSheet* sheet : aSheets) {
+            nsIURI* uri = sheet->GetSheetURI();
+            if (uri) {
+              nsCString spec;
+              uri->GetSpec(spec);
+              printf("    %p %s", sheet, spec.get());
+            } else {
+              printf("    %p (null uri)", sheet);
+            }
+            if (!sheet->IsComplete()) {
+              printf(" [not complete]");
+            }
+            printf("\n");
+          }
+          printf("  document cache key:\n");
+          printf("    ");
+          de.mCacheKey.List();
+          printf("\n");
+          */
           return de.mRuleProcessor;
         }
       }
@@ -200,6 +224,28 @@ RuleProcessorCache::DoPutRuleProcessor(
   }
 #endif
 
+  printf("stored cached rule processor %p [cache %p]:\n", aRuleProcessor, this);
+  /*
+  printf("  style sheets:\n");
+  for (CSSStyleSheet* sheet : aSheets) {
+    nsIURI* uri = sheet->GetSheetURI();
+    if (uri) {
+      nsCString spec;
+      uri->GetSpec(spec);
+      printf("    %p %s", sheet, spec.get());
+    } else {
+      printf("    %p (null uri)", sheet);
+    }
+    if (!sheet->IsComplete()) {
+      printf(" [not complete]");
+    }
+    printf("\n");
+  }
+  printf("  document cache key:\n");
+  printf("    ");
+  aCacheKey.List();
+  printf("\n");
+  */
   DocumentEntry* documentEntry = entry->mDocumentEntries.AppendElement();
   documentEntry->mCacheKey = aCacheKey;
   documentEntry->mRuleProcessor = aRuleProcessor;
@@ -224,21 +270,25 @@ RuleProcessorCache::DoHasRuleProcessor(nsCSSRuleProcessor* aRuleProcessor)
 void
 RuleProcessorCache::DoRemoveRuleProcessor(nsCSSRuleProcessor* aRuleProcessor)
 {
+  printf("removing rule processor %p [cache %p]\n", aRuleProcessor, this);
   aRuleProcessor->SetInRuleProcessorCache(false);
   mExpirationTracker.RemoveFromTracker(aRuleProcessor);
   for (Entry& e : mEntries) {
     for (size_t i = 0; i < e.mDocumentEntries.Length(); i++) {
       if (e.mDocumentEntries[i].mRuleProcessor == aRuleProcessor) {
+        // printf("  found it!\n");
         e.mDocumentEntries.RemoveElementAt(i);
         return;
       }
     }
   }
+  // printf("  didn't find it?\n");
 }
 
 void
 RuleProcessorCache::DoStartTracking(nsCSSRuleProcessor* aRuleProcessor)
 {
+  printf("starting to track %p [cache %p]\n", aRuleProcessor, this);
   mExpirationTracker.AddObject(aRuleProcessor);
 }
 
@@ -262,6 +312,7 @@ RuleProcessorCache::SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf)
       n += de.mRuleProcessor->SizeOfIncludingThis(aMallocSizeOf);
     }
   }
+  // printf("%d RuleProcessorCache entries\n", count);
 
   return n;
 }
@@ -271,6 +322,7 @@ RuleProcessorCache::ExpirationTracker::RemoveFromTracker(
     nsCSSRuleProcessor* aRuleProcessor)
 {
   if (aRuleProcessor->GetExpirationState()->IsTracked()) {
+    printf("stopping tracking %p [cache %p]\n", aRuleProcessor, mCache);
     RemoveObject(aRuleProcessor);
   }
 }
