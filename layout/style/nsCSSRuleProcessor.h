@@ -173,6 +173,8 @@ public:
   bool IsShared() const { return mIsShared; }
 
   nsExpirationState* GetExpirationState() { return &mExpirationState; }
+  void AddStyleSetRef();
+  void ReleaseStyleSetRef();
   void SetInRuleProcessorCache(bool aVal) {
     MOZ_ASSERT(mIsShared);
     printf("%p SetInRuleProcessorCache %d\n", this, aVal);
@@ -237,6 +239,7 @@ private:
   nsDocumentRuleResultCacheKey mDocumentCacheKey;
 
   nsExpirationState mExpirationState;
+  int32_t mStyleSetRefCnt;
 
   // type of stylesheet using this processor
   uint8_t mSheetType;  // == nsStyleSet::sheetType

@@ -1015,6 +1015,7 @@ nsCSSRuleProcessor::nsCSSRuleProcessor(const sheet_array_type& aSheets,
                        : UniquePtr<nsMediaQueryResultCacheKey>())
   , mLastPresContext(nullptr)
   , mScopeElement(aScopeElement)
+  , mStyleSetRefCnt(0)
   , mSheetType(aSheetType)
   , mIsShared(aIsShared)
   , mMustGatherDocumentRules(aIsShared)
@@ -3697,6 +3698,24 @@ nsCSSRuleProcessor::GetDocumentCacheKey(nsPresContext* aPresContext)
   MOZ_ASSERT(mIsShared);
   GetRuleCascade(aPresContext);
   return mDocumentCacheKey;
+}
+
+void
+nsCSSRuleProcessor::AddStyleSetRef()
+{
+  MOZ_ASSERT(mIsShared);
+  if (++mStyleSetRefCnt == 1) {
+    RuleProcessorCache::StopTracking(this);
+  }
+}
+
+void
+nsCSSRuleProcessor::ReleaseStyleSetRef()
+{
+  MOZ_ASSERT(mIsShared);
+  if (--mStyleSetRefCnt == 0 && mInRuleProcessorCache) {
+    RuleProcessorCache::StartTracking(this);
+  }
 }
 
 // TreeMatchContext and AncestorFilter out of line methods
