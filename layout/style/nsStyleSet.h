@@ -87,6 +87,7 @@ class nsStyleSet
 {
  public:
   nsStyleSet();
+  ~nsStyleSet();
 
   size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
