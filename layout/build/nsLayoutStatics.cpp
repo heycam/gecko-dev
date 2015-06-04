@@ -30,6 +30,7 @@
 #include "nsGkAtoms.h"
 #include "nsImageFrame.h"
 #include "nsLayoutStylesheetCache.h"
+#include "mozilla/RuleProcessorCache.h"
 #include "nsPrincipal.h"
 #include "nsRange.h"
 #include "nsRegion.h"
@@ -380,6 +381,7 @@ nsLayoutStatics::Shutdown()
   nsAttrValue::Shutdown();
   nsContentUtils::Shutdown();
   nsLayoutStylesheetCache::Shutdown();
+  RuleProcessorCache::Shutdown();
 
   ShutdownJSEnvironment();
   nsGlobalWindow::ShutDown();
