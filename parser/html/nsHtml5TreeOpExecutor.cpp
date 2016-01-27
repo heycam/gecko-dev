@@ -609,8 +609,6 @@ nsHtml5TreeOpExecutor::StartLayout() {
     return;
   }
 
-  nsContentSink::StartLayout(false);
-
   BeginDocUpdate();
 }
 
