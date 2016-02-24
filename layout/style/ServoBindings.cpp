@@ -113,6 +113,23 @@ Gecko_IsHTMLElementInHTMLDocument(RawGeckoElement* aElement)
   return aElement->IsHTMLElement() && aElement->OwnerDoc()->IsHTMLDocument();
 }
 
+const char*
+Gecko_GetAttrAsUTF8(RawGeckoElement* aElement, nsIAtom* aNS, nsIAtom* aName,
+                    uint32_t* aLength)
+{
+  if (aNS != nsGkAtoms::_empty) {
+    NS_ERROR("Can't handle namespaces yet");
+    return nullptr;
+  }
+
+  const nsAttrValue* val = aElement->GetParsedAttr(aName);
+  if (!val) {
+    return nullptr;
+  }
+  *aLength = val->UTF8String().Length();
+  return val->UTF8String().get();
+}
+
 bool
 Gecko_IsLink(RawGeckoElement* aElement)
 {

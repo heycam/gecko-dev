@@ -963,6 +963,11 @@ public:
     return mAttrsAndChildren.GetAttr(aAttr);
   }
 
+  const nsAttrValue* GetParsedAttr(const nsAString& aAttr) const
+  {
+    return mAttrsAndChildren.GetAttr(aAttr);
+  }
+
   /**
    * Returns the attribute map, if there is one.
    *

@@ -273,6 +273,7 @@ nsAttrValue::Reset()
   }
 
   mBits = 0;
+  mUTF8String.reset();
 }
 
 void
@@ -291,6 +292,7 @@ nsAttrValue::SetTo(const nsAttrValue& aOther)
         str->AddRef();
         SetPtrValueAndType(str, eStringBase);
       }
+      BuildUTF8String();
       return;
     }
     case eOtherBase:
@@ -303,12 +305,14 @@ nsAttrValue::SetTo(const nsAttrValue& aOther)
       nsIAtom* atom = aOther.GetAtomValue();
       NS_ADDREF(atom);
       SetPtrValueAndType(atom, eAtomBase);
+      BuildUTF8String();
       return;
     }
     case eIntegerBase:
     {
       ResetIfSet();
       mBits = aOther.mBits;
+      BuildUTF8String();
       return;      
     }
   }
@@ -318,6 +322,7 @@ nsAttrValue::SetTo(const nsAttrValue& aOther)
     delete ClearMiscContainer();
     NS_ADDREF(otherCont);
     SetPtrValueAndType(otherCont, eOtherBase);
+    BuildUTF8String();
     return;
   }
 
@@ -405,6 +410,7 @@ nsAttrValue::SetTo(const nsAttrValue& aOther)
   // Note, set mType after switch-case, otherwise EnsureEmptyAtomArray doesn't
   // work correctly.
   cont->mType = otherCont->mType;
+  BuildUTF8String();
 }
 
 void
@@ -415,6 +421,8 @@ nsAttrValue::SetTo(const nsAString& aValue)
   if (buf) {
     SetPtrValueAndType(buf, eStringBase);
   }
+
+  BuildUTF8String();
 }
 
 void
@@ -425,6 +433,8 @@ nsAttrValue::SetTo(nsIAtom* aValue)
     NS_ADDREF(aValue);
     SetPtrValueAndType(aValue, eAtomBase);
   }
+
+  BuildUTF8String();
 }
 
 void
@@ -432,6 +442,7 @@ nsAttrValue::SetTo(int16_t aInt)
 {
   ResetIfSet();
   SetIntValueAndType(aInt, eInteger, nullptr);
+  BuildUTF8String();
 }
 
 void
@@ -439,6 +450,7 @@ nsAttrValue::SetTo(int32_t aInt, const nsAString* aSerialized)
 {
   ResetIfSet();
   SetIntValueAndType(aInt, eInteger, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -448,6 +460,7 @@ nsAttrValue::SetTo(double aValue, const nsAString* aSerialized)
   cont->mDoubleValue = aValue;
   cont->mType = eDoubleValue;
   SetMiscAtomOrString(aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -460,6 +473,7 @@ nsAttrValue::SetTo(css::Declaration* aValue, const nsAString* aSerialized)
   NS_ADDREF(cont);
   SetMiscAtomOrString(aSerialized);
   MOZ_ASSERT(cont->mValue.mRefCount == 1);
+  BuildUTF8String();
 }
 
 void
@@ -469,6 +483,7 @@ nsAttrValue::SetTo(css::URLValue* aValue, const nsAString* aSerialized)
   NS_ADDREF(cont->mValue.mURL = aValue);
   cont->mType = eURL;
   SetMiscAtomOrString(aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -477,6 +492,7 @@ nsAttrValue::SetTo(const nsIntMargin& aValue)
   MiscContainer* cont = EnsureEmptyMiscContainer();
   cont->mValue.mIntMargin = new nsIntMargin(aValue);
   cont->mType = eIntMarginValue;
+  BuildUTF8String();
 }
 
 void
@@ -496,18 +512,21 @@ void
 nsAttrValue::SetTo(const nsSVGAngle& aValue, const nsAString* aSerialized)
 {
   SetSVGType(eSVGAngle, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
 nsAttrValue::SetTo(const nsSVGIntegerPair& aValue, const nsAString* aSerialized)
 {
   SetSVGType(eSVGIntegerPair, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
 nsAttrValue::SetTo(const nsSVGLength2& aValue, const nsAString* aSerialized)
 {
   SetSVGType(eSVGLength, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -520,6 +539,7 @@ nsAttrValue::SetTo(const SVGLengthList& aValue,
     aSerialized = nullptr;
   }
   SetSVGType(eSVGLengthList, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -532,12 +552,14 @@ nsAttrValue::SetTo(const SVGNumberList& aValue,
     aSerialized = nullptr;
   }
   SetSVGType(eSVGNumberList, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
 nsAttrValue::SetTo(const nsSVGNumberPair& aValue, const nsAString* aSerialized)
 {
   SetSVGType(eSVGNumberPair, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -550,6 +572,7 @@ nsAttrValue::SetTo(const SVGPathData& aValue,
     aSerialized = nullptr;
   }
   SetSVGType(eSVGPathData, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -562,6 +585,7 @@ nsAttrValue::SetTo(const SVGPointList& aValue,
     aSerialized = nullptr;
   }
   SetSVGType(eSVGPointList, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -569,6 +593,7 @@ nsAttrValue::SetTo(const SVGAnimatedPreserveAspectRatio& aValue,
                    const nsAString* aSerialized)
 {
   SetSVGType(eSVGPreserveAspectRatio, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -581,6 +606,7 @@ nsAttrValue::SetTo(const SVGStringList& aValue,
     aSerialized = nullptr;
   }
   SetSVGType(eSVGStringList, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -593,12 +619,14 @@ nsAttrValue::SetTo(const SVGTransformList& aValue,
     aSerialized = nullptr;
   }
   SetSVGType(eSVGTransformList, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
 nsAttrValue::SetTo(const nsSVGViewBox& aValue, const nsAString* aSerialized)
 {
   SetSVGType(eSVGViewBox, &aValue, aSerialized);
+  BuildUTF8String();
 }
 
 void
@@ -618,8 +646,11 @@ void
 nsAttrValue::SwapValueWith(nsAttrValue& aOther)
 {
   uintptr_t tmp = aOther.mBits;
+  mozilla::Maybe<nsCString> tmp2 = aOther.mUTF8String;
   aOther.mBits = mBits;
+  aOther.mUTF8String = mUTF8String;
   mBits = tmp;
+  mUTF8String = tmp2;
 }
 
 void
@@ -1295,6 +1326,7 @@ nsAttrValue::ParseAtom(const nsAString& aValue)
   if (atom) {
     SetPtrValueAndType(atom.forget().take(), eAtomBase);
   }
+  BuildUTF8String();
 }
 
 void
@@ -1342,6 +1374,7 @@ nsAttrValue::ParseAtomArray(const nsAString& aValue)
     nsIAtom* atom = nullptr;
     classAtom.swap(atom);
     SetPtrValueAndType(atom, eAtomBase);
+    BuildUTF8String();
     return;
   }
 
@@ -1378,6 +1411,7 @@ nsAttrValue::ParseAtomArray(const nsAString& aValue)
   }
 
   SetMiscAtomOrString(&aValue);
+  BuildUTF8String();
   return;
 }
 
@@ -1483,6 +1517,7 @@ nsAttrValue::ParseEnumValue(const nsAString& aValue,
       NS_ASSERTION(GetEnumValue() == tableEntry->value,
                    "failed to store enum properly");
 
+      BuildUTF8String();
       return true;
     }
     tableEntry++;
@@ -1493,6 +1528,7 @@ nsAttrValue::ParseEnumValue(const nsAString& aValue,
                     "aDefaultValue not inside aTable?");
     SetIntValueAndType(EnumTableEntryToValue(aTable, aDefaultValue),
                        eEnum, &aValue);
+    BuildUTF8String();
     return true;
   }
 
@@ -1525,6 +1561,7 @@ nsAttrValue::ParseSpecialIntValue(const nsAString& aString)
 
   SetIntValueAndType(val, isPercent ? ePercent : eInteger,
                      nonStrict ? &aString : nullptr);
+  BuildUTF8String();
   return true;
 }
 
@@ -1551,6 +1588,7 @@ nsAttrValue::ParseIntWithBounds(const nsAString& aString,
 
   SetIntValueAndType(val, eInteger, nonStrict ? &aString : nullptr);
 
+  BuildUTF8String();
   return true;
 }
 
@@ -1571,6 +1609,7 @@ nsAttrValue::ParseNonNegativeIntValue(const nsAString& aString)
 
   SetIntValueAndType(originalVal, eInteger, nonStrict ? &aString : nullptr);
 
+  BuildUTF8String();
   return true;
 }
 
@@ -1591,6 +1630,7 @@ nsAttrValue::ParsePositiveIntValue(const nsAString& aString)
 
   SetIntValueAndType(originalVal, eInteger, nonStrict ? &aString : nullptr);
 
+  BuildUTF8String();
   return true;
 }
 
@@ -1632,11 +1672,13 @@ nsAttrValue::ParseColor(const nsAString& aString)
     nsDependentString withoutHash(colorStr.get() + 1, colorStr.Length() - 1);
     if (NS_HexToRGBA(withoutHash, nsHexColorType::NoAlpha, &color)) {
       SetColorValue(color, aString);
+      BuildUTF8String();
       return true;
     }
   } else {
     if (NS_ColorNameToRGB(colorStr, &color)) {
       SetColorValue(color, aString);
+      BuildUTF8String();
       return true;
     }
   }
@@ -1649,6 +1691,7 @@ nsAttrValue::ParseColor(const nsAString& aString)
   // Use NS_LooseHexToRGB as a fallback if nothing above worked.
   if (NS_LooseHexToRGB(colorStr, &color)) {
     SetColorValue(color, aString);
+    BuildUTF8String();
     return true;
   }
 
@@ -1671,6 +1714,7 @@ bool nsAttrValue::ParseDoubleValue(const nsAString& aString)
   nsAutoString serializedFloat;
   serializedFloat.AppendFloat(val);
   SetMiscAtomOrString(serializedFloat.Equals(aString) ? nullptr : &aString);
+  BuildUTF8String();
   return true;
 }
 
@@ -1687,6 +1731,7 @@ nsAttrValue::ParseIntMarginValue(const nsAString& aString)
   cont->mValue.mIntMargin = new nsIntMargin(margins);
   cont->mType = eIntMarginValue;
   SetMiscAtomOrString(&aString);
+  BuildUTF8String();
   return true;
 }
 
@@ -1739,6 +1784,7 @@ nsAttrValue::ParseStyleAttribute(const nsAString& aString,
       // Set our MiscContainer to the cached one.
       NS_ADDREF(cont);
       SetPtrValueAndType(cont, eOtherBase);
+      BuildUTF8String();
       return true;
     }
   }
@@ -1754,6 +1800,8 @@ nsAttrValue::ParseStyleAttribute(const nsAString& aString,
     MOZ_ASSERT(decl);
     parsed = true;
     SetToAlreadyAddrefed(decl, &aString);
+    mUTF8String.reset();
+    mUTF8String.emplace(value);
   } else {
     css::Loader* cssLoader = ownerDoc->CSSLoader();
     nsCSSParser cssParser(cssLoader);
@@ -1765,6 +1813,7 @@ nsAttrValue::ParseStyleAttribute(const nsAString& aString,
       parsed = true;
       declaration->SetHTMLCSSStyleSheet(sheet);
       SetTo(declaration, &aString);
+      BuildUTF8String();
     }
   }
 

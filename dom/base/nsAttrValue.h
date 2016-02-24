@@ -22,6 +22,7 @@
 #include "SVGAttrValueWrapper.h"
 #include "nsTArrayForwardDeclare.h"
 #include "nsIAtom.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/dom/BindingDeclarations.h"
 
@@ -183,6 +184,21 @@ public:
 
   void ToString(nsAString& aResult) const;
   inline void ToString(mozilla::dom::DOMString& aResult) const;
+
+  void BuildUTF8String() {
+    // XXXbholley: At the very least, stop copying twice here.
+    nsAutoString str;
+    ToString(str);
+    mUTF8String.reset();
+    mUTF8String.emplace(NS_ConvertUTF16toUTF8(str));
+  }
+
+  const nsCString& UTF8String() const {
+    // Long-term, we would ideally convert the canonical representation here to
+    // UTF8.
+    MOZ_ASSERT(mUTF8String.isSome(), "Hit some cracks in this hack!");
+    return mUTF8String.ref();
+  }
 
   /**
    * Returns the value of this object as an atom. If necessary, the value will
@@ -448,6 +464,7 @@ private:
   static nsTArray<const EnumTable*>* sEnumTableArray;
 
   uintptr_t mBits;
+  mozilla::Maybe<nsCString> mUTF8String;
 };
 
 inline const nsAttrValue&
