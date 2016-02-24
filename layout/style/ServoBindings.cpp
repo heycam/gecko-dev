@@ -109,6 +109,56 @@ Gecko_IsHTMLElementInHTMLDocument(RawGeckoElement* aElement)
   return aElement->IsHTMLElement() && aElement->OwnerDoc()->IsHTMLDocument();
 }
 
+const char*
+Gecko_GetAttrAsUTF8(RawGeckoElement* aElement,
+                    const uint8_t* aNS, uint32_t aNSLen,
+                    const uint8_t* aName, uint32_t aNameLen,
+                    uint32_t* aLength)
+{
+  if (aNSLen != 0) {
+    NS_ERROR("Can't handle namespaces yet");
+    return nullptr;
+  }
+
+  nsDependentCSubstring name(reinterpret_cast<const char*>(aName), aNameLen);
+  const nsAttrValue* val = aElement->GetParsedAttr(NS_ConvertUTF8toUTF16(name));
+  if (!val) {
+    return nullptr;
+  }
+  *aLength = val->UTF8String().Length();
+  return val->UTF8String().get();
+}
+
+const uint16_t*
+Gecko_GetAtomAsUTF16(nsIAtom* aAtom, uint32_t* aLength)
+{
+  static_assert(sizeof(char16_t) == sizeof(uint16_t), "Servo doesn't know what a char16_t is");
+
+  MOZ_ASSERT(aAtom);
+
+  *aLength = aAtom->GetLength();
+  return reinterpret_cast<const uint16_t*>(aAtom->GetUTF16String());
+}
+
+const uint16_t*
+Gecko_LocalName(RawGeckoElement* aElement, uint32_t* aLength)
+{
+  static_assert(sizeof(char16_t) == sizeof(uint16_t), "Servo doesn't know what a char16_t is");
+  *aLength = aElement->LocalName().Length();
+  return reinterpret_cast<const uint16_t*>(aElement->LocalName().get());
+}
+
+const uint16_t*
+Gecko_Namespace(RawGeckoElement* aElement, uint32_t* aLength)
+{
+  static_assert(sizeof(char16_t) == sizeof(uint16_t), "Servo doesn't know what a char16_t is");
+  nsNameSpaceManager* manager = nsContentUtils::NameSpaceManager();
+  const nsString& str = manager->NameSpaceURIRef(aElement->NodeInfo()->NamespaceID());
+  *aLength = str.Length();
+  return reinterpret_cast<const uint16_t*>(str.get());
+}
+
+
 bool
 Gecko_IsLink(RawGeckoElement* aElement)
 {

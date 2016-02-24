@@ -75,6 +75,11 @@ public:
                                      int32_t& aNameSpaceID);
 
   virtual nsresult GetNameSpaceURI(int32_t aNameSpaceID, nsAString& aURI);
+
+  // Use carefully - any mutation of the namespace manager can invalidate the
+  // returned reference.
+  const nsString& NameSpaceURIRef(int32_t aNameSpaceID);
+
   virtual int32_t GetNameSpaceID(const nsAString& aURI);
 
   virtual bool HasElementCreator(int32_t aNameSpaceID);

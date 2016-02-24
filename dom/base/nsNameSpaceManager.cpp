@@ -119,6 +119,14 @@ nsNameSpaceManager::GetNameSpaceURI(int32_t aNameSpaceID, nsAString& aURI)
   return NS_OK;
 }
 
+const nsString&
+nsNameSpaceManager::NameSpaceURIRef(int32_t aNameSpaceID)
+{
+  int32_t index = aNameSpaceID - 1; // id is index + 1
+  MOZ_RELEASE_ASSERT(index >= 0 && index < int32_t(mURIArray.Length()));
+  return *mURIArray[index].get();
+}
+
 int32_t
 nsNameSpaceManager::GetNameSpaceID(const nsAString& aURI)
 {

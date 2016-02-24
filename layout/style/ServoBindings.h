@@ -105,6 +105,16 @@ void Servo_Initialize();
 // Restyle the given document.
 void Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set);
 
+// Temporary string-based APIs for attributes and element names.
+//
+// These won't ever land in mozilla-central, as we'll replace them
+// with atom-based APIs instead.
+const char* Gecko_GetAttrAsUTF8(RawGeckoElement* element, const uint8_t* ns, uint32_t nslen,
+                                const uint8_t* name, uint32_t namelen, uint32_t* length);
+const uint16_t* Gecko_GetAtomAsUTF16(nsIAtom* atom, uint32_t* length);
+const uint16_t* Gecko_LocalName(RawGeckoElement* element, uint32_t* length);
+const uint16_t* Gecko_Namespace(RawGeckoElement* element, uint32_t* length);
+
 // Style-struct management.
 #define STYLE_STRUCT(name, checkdata_cb) \
 struct nsStyle##name; \
