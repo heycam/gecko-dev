@@ -9,6 +9,7 @@
 #include "mozilla/DebugOnly.h"
 
 #include "nsCSSAnonBoxes.h"
+#include "nsCSSPropertySet.h"
 #include "nsStyleConsts.h"
 #include "nsString.h"
 #include "nsPresContext.h"
@@ -320,6 +321,7 @@ nsStyleContext::MoveTo(nsStyleContext* aNewParent)
 
   nsStyleContext* oldParent = mParent;
 
+  // XXX This needs to OR the oldParent's mExplicitlyInherited bits into aNewParent.
   if (oldParent->HasChildThatUsesResetStyle()) {
     aNewParent->AddStyleBit(NS_STYLE_HAS_CHILD_THAT_USES_RESET_STYLE);
   }
@@ -1499,6 +1501,18 @@ nsStyleContext::SetIneligibleForSharing()
       child = child->mNextSibling;
     } while (mEmptyChild != child);
   }
+}
+
+void
+nsStyleContext::SetExplicitlyInherited(nsPresContext* aPresContext,
+                                       nsCSSProperty aProperty)
+{
+  MOZ_ASSERT(!nsCSSProps::IsInherited(aProperty));
+
+  if (!mExplicitlyInherited) {
+    mExplicitlyInherited = new (aPresContext) nsCSSPropertySet;
+  }
+  mExplicitlyInherited->AddProperty(aProperty);
 }
 
 #ifdef RESTYLE_LOGGING

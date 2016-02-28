@@ -4122,6 +4122,11 @@ ElementRestyler::RestyleSelf(nsIFrame* aSelf,
       } else if ((samePointerStructs & NS_STYLE_RESET_STRUCT_MASK) !=
                    NS_STYLE_RESET_STRUCT_MASK &&
                  oldContext->HasChildThatUsesResetStyle()) {
+        // XXX XXX XXX
+        // Now, replace HasChildThatUsesResetStyle with lookups on
+        // nsStyleContext::mExplicitlyInherited.
+        // We might need style structs to be able to tell us which specific
+        // properties differed.
         LOG_RESTYLE("can't return eRestyleResult_StopWithStyleChange since "
                     "there is different reset data and descendants use it");
         canStopWithStyleChange = false;

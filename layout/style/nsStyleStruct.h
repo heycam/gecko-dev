@@ -28,6 +28,7 @@
 #include "nsCOMArray.h"
 #include "nsTArray.h"
 #include "nsCSSValue.h"
+#include "nsCSSPropertySet.h"
 #include "imgRequestProxy.h"
 #include "Orientation.h"
 #include "CounterStyleManager.h"
@@ -995,6 +996,8 @@ struct nsStyleBorder
            nsChangeHint_ReflowChangesSizeOrPosition |
            nsChangeHint_ClearAncestorIntrinsics;
   }
+  void GetChangedProperties(const nsStyleBorder& aOther,
+                            nsCSSPropertySet& aResult) const;
 
   void EnsureBorderColors() {
     if (!mBorderColors) {
@@ -1227,6 +1230,8 @@ struct nsStyleOutline
     // handled for descendants at all.
     return nsChangeHint(0);
   }
+  void GetChangedProperties(const nsStyleOutline& aOther,
+                            nsCSSPropertySet& aResult) const;
 
   nsStyleCorners  mOutlineRadius; // [reset] coord, percent, calc
 
@@ -3059,6 +3064,8 @@ struct nsStyleXUL
            nsChangeHint_ReflowChangesSizeOrPosition |
            nsChangeHint_ClearAncestorIntrinsics;
   }
+  void GetChangedProperties(const nsStyleXUL& aOther,
+                            nsCSSPropertySet& aResult) const;
 
   float         mBoxFlex;               // [reset] see nsStyleConsts.h
   uint32_t      mBoxOrdinal;            // [reset] see nsStyleConsts.h
@@ -3097,6 +3104,8 @@ struct nsStyleColumn
            nsChangeHint_ReflowChangesSizeOrPosition |
            nsChangeHint_ClearAncestorIntrinsics;
   }
+  void GetChangedProperties(const nsStyleColumn& aOther,
+                            nsCSSPropertySet& aResult) const;
 
   /**
    * This is the maximum number of columns we can process. It's used in both
@@ -3475,6 +3484,8 @@ struct nsStyleSVGReset
            nsChangeHint_ReflowChangesSizeOrPosition |
            nsChangeHint_ClearAncestorIntrinsics;
   }
+  void GetChangedProperties(const nsStyleSVGReset& aOther,
+                            nsCSSPropertySet& aResult) const;
 
   bool HasFilters() const {
     return !mFilters.IsEmpty();

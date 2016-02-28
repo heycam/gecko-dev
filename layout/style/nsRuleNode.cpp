@@ -4619,6 +4619,21 @@ nsRuleNode::ComputeTextResetData(void* aStartStruct,
 {
   COMPUTE_START_RESET(TextReset, (), text, parentText)
 
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_TEXTRESET(name_, id_, method_, flags_, pref_,                 \
+                           parsevariant_, kwtable_, offset_, animtype_)        \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_TEXTRESET
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
+
   // vertical-align: enum, length, percent, calc, inherit
   const nsCSSValue* verticalAlignValue = aRuleData->ValueForVerticalAlign();
   if (!SetCoord(*verticalAlignValue, text->mVerticalAlign,
@@ -4876,6 +4891,21 @@ nsRuleNode::ComputeUIResetData(void* aStartStruct,
 {
   COMPUTE_START_RESET(UIReset, (), ui, parentUI)
 
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_UIRESET(name_, id_, method_, flags_, pref_,                   \
+                         parsevariant_, kwtable_, offset_, animtype_)          \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_UIRESET
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
+
   // user-select: enum, inherit, initial
   SetDiscrete(*aRuleData->ValueForUserSelect(),
               ui->mUserSelect, conditions,
@@ -5121,6 +5151,21 @@ nsRuleNode::ComputeDisplayData(void* aStartStruct,
                                const RuleNodeCacheConditions aConditions)
 {
   COMPUTE_START_RESET(Display, (), display, parentDisplay)
+
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_DISPLAY(name_, id_, method_, flags_, pref_,                   \
+                         parsevariant_, kwtable_, offset_, animtype_)          \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_DISPLAY
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
 
   // We may have ended up with aStartStruct's values of mDisplay and
   // mFloats, but those may not be correct if our style data overrides
@@ -6841,6 +6886,21 @@ nsRuleNode::ComputeBackgroundData(void* aStartStruct,
 {
   COMPUTE_START_RESET(Background, (), bg, parentBG)
 
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_BACKGROUND(name_, id_, method_, flags_, pref_,                \
+                            parsevariant_, kwtable_, offset_, animtype_)       \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_BACKGROUND
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
+
   // background-color: color, string, inherit
   const nsCSSValue* backColorValue = aRuleData->ValueForBackgroundColor();
   if (eCSSUnit_Initial == backColorValue->GetUnit() ||
@@ -6985,6 +7045,21 @@ nsRuleNode::ComputeMarginData(void* aStartStruct,
 {
   COMPUTE_START_RESET(Margin, (), margin, parentMargin)
 
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_MARGIN(name_, id_, method_, flags_, pref_,                    \
+                        parsevariant_, kwtable_, offset_, animtype_)           \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_MARGIN
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
+
   // margin: length, percent, calc, inherit
   const nsCSSProperty* subprops =
     nsCSSProps::SubpropertyEntryFor(eCSSProperty_margin);
@@ -7090,6 +7165,21 @@ nsRuleNode::ComputeBorderData(void* aStartStruct,
                               const RuleNodeCacheConditions aConditions)
 {
   COMPUTE_START_RESET(Border, (mPresContext), border, parentBorder)
+
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_BORDER(name_, id_, method_, flags_, pref_,                    \
+                        parsevariant_, kwtable_, offset_, animtype_)           \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_BORDER
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
 
   // box-decoration-break: enum, inherit, initial
   SetDiscrete(*aRuleData->ValueForBoxDecorationBreak(),
@@ -7434,6 +7524,21 @@ nsRuleNode::ComputePaddingData(void* aStartStruct,
 {
   COMPUTE_START_RESET(Padding, (), padding, parentPadding)
 
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_PADDING(name_, id_, method_, flags_, pref_,                   \
+                         parsevariant_, kwtable_, offset_, animtype_)          \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_PADDING
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
+
   // padding: length, percent, calc, inherit
   const nsCSSProperty* subprops =
     nsCSSProps::SubpropertyEntryFor(eCSSProperty_padding);
@@ -7462,6 +7567,21 @@ nsRuleNode::ComputeOutlineData(void* aStartStruct,
                                const RuleNodeCacheConditions aConditions)
 {
   COMPUTE_START_RESET(Outline, (mPresContext), outline, parentOutline)
+
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_OUTLINE(name_, id_, method_, flags_, pref_,                   \
+                         parsevariant_, kwtable_, offset_, animtype_)          \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_OUTLINE
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
 
   // outline-width: length, enum, inherit
   const nsCSSValue* outlineWidthValue = aRuleData->ValueForOutlineWidth();
@@ -8031,6 +8151,21 @@ nsRuleNode::ComputePositionData(void* aStartStruct,
 {
   COMPUTE_START_RESET(Position, (), pos, parentPos)
 
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_POSITION(name_, id_, method_, flags_, pref_,                  \
+                          parsevariant_, kwtable_, offset_, animtype_)         \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_POSITION
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
+
   // box offsets: length, percent, calc, auto, inherit
   static const nsCSSProperty offsetProps[] = {
     eCSSProperty_top,
@@ -8411,6 +8546,21 @@ nsRuleNode::ComputeTableData(void* aStartStruct,
 {
   COMPUTE_START_RESET(Table, (), table, parentTable)
 
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_TABLE(name_, id_, method_, flags_, pref_,                     \
+                       parsevariant_, kwtable_, offset_, animtype_)            \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_TABLE
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
+
   // table-layout: enum, inherit, initial
   SetDiscrete(*aRuleData->ValueForTableLayout(),
               table->mLayoutStrategy, conditions,
@@ -8497,6 +8647,21 @@ nsRuleNode::ComputeContentData(void* aStartStruct,
   nsAutoString buffer;
 
   COMPUTE_START_RESET(Content, (), content, parentContent)
+
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_CONTENT(name_, id_, method_, flags_, pref_,                   \
+                         parsevariant_, kwtable_, offset_, animtype_)          \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_CONTENT
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
 
   // content: [string, url, counter, attr, enum]+, normal, none, inherit
   const nsCSSValue* contentValue = aRuleData->ValueForContent();
@@ -8790,6 +8955,21 @@ nsRuleNode::ComputeXULData(void* aStartStruct,
 {
   COMPUTE_START_RESET(XUL, (), xul, parentXUL)
 
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_XUL(name_, id_, method_, flags_, pref_,                       \
+                     parsevariant_, kwtable_, offset_, animtype_)              \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_XUL
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
+
   // box-align: enum, inherit, initial
   SetDiscrete(*aRuleData->ValueForBoxAlign(),
               xul->mBoxAlign, conditions,
@@ -8855,6 +9035,21 @@ nsRuleNode::ComputeColumnData(void* aStartStruct,
                               const RuleNodeCacheConditions aConditions)
 {
   COMPUTE_START_RESET(Column, (mPresContext), column, parent)
+
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_COLUMN(name_, id_, method_, flags_, pref_,                    \
+                        parsevariant_, kwtable_, offset_, animtype_)           \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_COLUMN
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
 
   // column-width: length, auto, inherit
   SetCoord(*aRuleData->ValueForColumnWidth(),
@@ -9618,6 +9813,21 @@ nsRuleNode::ComputeSVGResetData(void* aStartStruct,
                                 const RuleNodeCacheConditions aConditions)
 {
   COMPUTE_START_RESET(SVGReset, (), svgReset, parentSVGReset)
+
+  if (parentContext) {
+#define CHECK(id_, method_) \
+    if (aRuleData->ValueFor##method_()->GetUnit() == eCSSUnit_Inherit) {       \
+      parentContext->SetExplicitlyInherited(mPresContext, eCSSProperty_##id_); \
+    }
+#define CSS_PROP_PUBLIC_OR_PRIVATE(publicname_, privatename_) privatename_
+#define CSS_PROP_SVGRESET(name_, id_, method_, flags_, pref_,                  \
+                          parsevariant_, kwtable_, offset_, animtype_)         \
+    CHECK(id_, method_)
+#include "nsCSSPropList.h"
+#undef CSS_PROP_SVGRESET
+#undef CSS_PROP_PUBLIC_OR_PRIVATE
+#undef CHECK
+  }
 
   // stop-color:
   const nsCSSValue* stopColorValue = aRuleData->ValueForStopColor();

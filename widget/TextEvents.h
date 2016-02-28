@@ -97,6 +97,7 @@ protected:
     , mNativeModifierFlags(0)
 #endif
   {
+    printf("keyboard event\n");
   }
 
 public:
@@ -121,6 +122,7 @@ public:
     , mNativeModifierFlags(0)
 #endif
   {
+    printf("keyboard event\n");
   }
 
   virtual WidgetEvent* Duplicate() const override

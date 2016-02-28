@@ -13,6 +13,7 @@
 #include "nsRuleNode.h"
 #include "nsCSSPseudoElements.h"
 
+class nsCSSPropertySet;
 class nsIAtom;
 class nsPresContext;
 
@@ -457,6 +458,9 @@ public:
     return cachedData;
   }
 
+  void SetExplicitlyInherited(nsPresContext* aPresContext,
+                              nsCSSProperty aProperty);
+
 private:
   // Private destructor, to discourage deletion outside of Release():
   ~nsStyleContext();
@@ -598,6 +602,8 @@ private:
   // sometimes allocate the mCachedResetData.
   nsResetStyleData*       mCachedResetData; // Cached reset style data.
   nsInheritedStyleData    mCachedInheritedData; // Cached inherited style data
+
+  nsCSSPropertySet*       mExplicitlyInherited;
 
   // mBits stores a number of things:
   //  - It records (using the style struct bits) which structs are

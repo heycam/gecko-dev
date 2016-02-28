@@ -31,6 +31,7 @@
 
 #include "mozilla/dom/AnimationEffectReadOnlyBinding.h" // for PlaybackDirection
 #include "mozilla/Likely.h"
+#include "mozilla/MacroForEach.h"
 #include "nsIURI.h"
 #include "nsIDocument.h"
 #include <algorithm>
@@ -91,6 +92,20 @@ static int safe_strcmp(const char16_t* a, const char16_t* b)
   }
   return NS_strcmp(a, b);
 }
+
+template<typename T>
+static bool
+PropertiesEqual(const T& aValue1, const T& aValue2)
+{
+  return aValue1 == aValue2;
+}
+
+#define CHECK_PROPERTY_FIELD(field_)                                          \
+  PropertiesEqual(field_, aOther.field_) ||
+#define CHECK_PROPERTY(prop_, ...)                                            \
+  if (!(MOZ_FOR_EACH(CHECK_PROPERTY_FIELD, (), (__VA_ARGS__)) true)) {        \
+    aResult.AddProperty(prop_);                                               \
+  }
 
 static bool AreShadowArraysEqual(nsCSSShadowArray* lhs,
                                  nsCSSShadowArray* rhs);
@@ -570,6 +585,27 @@ nsChangeHint nsStyleBorder::CalcDifference(const nsStyleBorder& aOther) const
   return NS_STYLE_HINT_NONE;
 }
 
+void
+nsStyleBorder::GetChangedProperties(const nsStyleBorder& aOther,
+                                    nsCSSPropertySet& aResult) const
+{
+  // mBorderColors (nsBorderColors**)
+  // mBoxShadow (RefPtr<nsCSSShadowArray>)
+  // mBorderRadius (nsStyleCorners)
+  // mBorderImageSource (nsStyleSides)
+  // mBorderImageSlice (nsStyleSides)
+  // mBorderImageWidth (nsStyleSides)
+  // mBorderImageOutset (nsStyleSides)
+  CHECK_PROPERTY(eCSSProperty_border_image_Fill, mBorderImageFill);
+  CHECK_PROPERTY(eCSSProperty_border_image_repeat, mBorderImageRepeatH,
+                                                   mBorderImageRepeatV);
+  CHECK_PROPERTY(eCSSProperty_float_edge, mFloatEdge);
+  CHECK_PROPERTY(eCSSProperty_box_decoration_break, mBoxDecorationBreak);
+  // mBorder (nsMargin)
+  // mBorderStyle (uint8_t[4])
+  // mBorderColor (nscolor[4])
+}
+
 nsStyleOutline::nsStyleOutline(nsPresContext* aPresContext)
 {
   MOZ_COUNT_CTOR(nsStyleOutline);
@@ -653,6 +689,17 @@ nsChangeHint nsStyleOutline::CalcDifference(const nsStyleOutline& aOther) const
   }
 
   return NS_STYLE_HINT_NONE;
+}
+
+void
+nsStyleOutline::GetChangedProperties(const nsStyleOutline& aOther,
+                                     nsCSSPropertySet& aResult) const
+{
+  // XXX mOutlineRadius (nsStyleCorners)
+  CHECK_PROPERTY(eCSSProperty_outline_width, mOutlineWidth);
+  CHECK_PROPERTY(eCSSProperty_outline_offset, mOutlineOffset);
+  CHECK_PROPERTY(eCSSProperty_outline_color, mOutlineColor);
+  CHECK_PROPERTY(eCSSProperty_outline_style, mOutlineStyle);
 }
 
 // --------------------
@@ -747,6 +794,19 @@ nsChangeHint nsStyleXUL::CalcDifference(const nsStyleXUL& aOther) const
   return NS_STYLE_HINT_REFLOW;
 }
 
+void
+nsStyleXUL::GetChangedProperties(const nsStyleXUL& aOther,
+                                 nsCSSPropertySet& aResult) const
+{
+  CHECK_PROPERTY(eCSSProperty_box_flex, mBoxFlex);
+  CHECK_PROPERTY(eCSSProperty_box_ordinal_group, mBoxOrdinal);
+  CHECK_PROPERTY(eCSSProperty_box_align, mBoxAlign);
+  CHECK_PROPERTY(eCSSProperty_box_direction, mBoxDirection);
+  CHECK_PROPERTY(eCSSProperty_box_orient, mBoxOrient);
+  CHECK_PROPERTY(eCSSProperty_box_pack, mBoxPack);
+  CHECK_PROPERTY(eCSSProperty_stack_sizing, mStretchStack);
+}
+
 // --------------------
 // nsStyleColumn
 //
@@ -816,6 +876,24 @@ nsChangeHint nsStyleColumn::CalcDifference(const nsStyleColumn& aOther) const
   }
 
   return NS_STYLE_HINT_NONE;
+}
+
+void
+nsStyleColumn::GetChangedProperties(const nsStyleColumn& aOther,
+                                    nsCSSPropertySet& aResult) const
+{
+  CHECK_PROPERTY(eCSSProperty__moz_column_count, mColumnCount);
+  CHECK_PROPERTY(eCSSProperty__moz_column_width, mColumnWidth);
+  CHECK_PROPERTY(eCSSProperty__moz_column_gap, mColumnGap);
+  CHECK_PROPERTY(eCSSProperty__moz_column_rule_style, mColumnRuleStyle);
+  CHECK_PROPERTY(eCSSProperty__moz_column_fill, mColumnFill);
+  CHECK_PROPERTY(eCSSProperty__moz_column_rule_width, mColumnRuleWidth);
+
+  if ((mColumnRuleColorIsForeground != aOther.mColumnRuleColorIsForeground) ||
+      (!mColumnRuleColorIsForeground &&
+       (mColumnRuleColor != aOther.mColumnRuleColor))) {
+    aResult.AddProperty(eCSSProperty__moz_column_rule_color);
+  }
 }
 
 // --------------------
@@ -1321,6 +1399,23 @@ nsChangeHint nsStyleSVGReset::CalcDifference(const nsStyleSVGReset& aOther) cons
   hint |= mMask.CalcDifference(aOther.mMask);
 
   return hint;
+}
+
+void
+nsStyleSVGReset::GetChangedProperties(const nsStyleSVGReset& aOther,
+                                      nsCSSPropertySet& aResult) const
+{
+  // XXX mMask (nsStyleImageLayers)
+  CHECK_PROPERTY(eCSSProperty_clip_path, mClipPath);
+  CHECK_PROPERTY(eCSSProperty_filter, mFilters);
+  CHECK_PROPERTY(eCSSProperty_stop_color, mStopColor);
+  CHECK_PROPERTY(eCSSProperty_flood_color, mFloodColor);
+  CHECK_PROPERTY(eCSSProperty_lighting_color, mLightingColor);
+  CHECK_PROPERTY(eCSSProperty_stop_opacity, mStopOpacity);
+  CHECK_PROPERTY(eCSSProperty_flood_opacity, mFloodOpacity);
+  CHECK_PROPERTY(eCSSProperty_dominant_baseline, mDominantBaseline);
+  CHECK_PROPERTY(eCSSProperty_vector_effect, mVectorEffect);
+  CHECK_PROPERTY(eCSSProperty_mask_type, mMaskType);
 }
 
 // nsStyleSVGPaint implementation
@@ -3933,3 +4028,6 @@ nsStyleVariables::CalcDifference(const nsStyleVariables& aOther) const
 {
   return nsChangeHint(0);
 }
+
+#undef CHECK_PROPERTY
+#undef CHECK_PROPERTY_FIELD
