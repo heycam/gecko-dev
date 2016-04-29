@@ -72,6 +72,12 @@ ServoStyleSet::EndUpdate()
 void
 ServoStyleSet::ForceRestyle(nsPresContext* aPresContext)
 {
+  nsCString url;
+  nsIURI* uri = aPresContext->Document()->GetDocumentURI();
+  if (uri) {
+    uri->GetSpec(url);
+  }
+  printf("ForceRestyle %p %s\n", aPresContext->Document(), url.get());
   Servo_RestyleDocument(aPresContext->Document(), mRawSet.get());
 }
 
@@ -133,8 +139,10 @@ ServoStyleSet::ResolveStyleForText(nsIContent* aTextNode,
                                    nsStyleContext* aParentContext)
 {
   MOZ_ASSERT(aTextNode && aTextNode->IsNodeOfType(nsINode::eTEXT));
-  return GetContext(aTextNode, aParentContext, nsCSSAnonBoxes::mozText,
+  RefPtr<nsStyleContext> sc = GetContext(aTextNode, aParentContext, nsCSSAnonBoxes::mozText,
                     CSSPseudoElementType::AnonBox);
+  // printf("color: %08x (parent %08x)\n", sc->StyleColor()->mColor, aParentContext->StyleColor()->mColor);
+  return sc.forget();
 }
 
 already_AddRefed<nsStyleContext>

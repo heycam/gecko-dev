@@ -412,6 +412,9 @@ nsStyleLinkElement::DoUpdateStyleSheet(nsIDocument* aOldDocument,
     if (!nsContentUtils::GetNodeTextContent(thisContent, false, text, fallible)) {
       return NS_ERROR_OUT_OF_MEMORY;
     }
+//     if (doc->CSSLoader()->GetStyleBackendType() == StyleBackendType::Servo) {
+//       printf("loading inline style:\n%s\n", NS_ConvertUTF16toUTF8(text).get());
+//     }
 
     MOZ_ASSERT(thisContent->NodeInfo()->NameAtom() != nsGkAtoms::link,
                "<link> is not 'inline', and needs different CSP checks");

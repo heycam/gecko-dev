@@ -1771,6 +1771,7 @@ Loader::ParseSheet(const nsAString& aInput,
                            aLoadData->mLineNumber,
                            aLoadData->mParsingMode);
   } else {
+    printf("ParseSheet:\n%s\n", NS_ConvertUTF16toUTF8(aInput).get());
     aLoadData->mSheet->AsServo()->ParseSheet(aInput, sheetURI, baseURI,
                                              aLoadData->mSheet->Principal(),
                                              aLoadData->mLineNumber,

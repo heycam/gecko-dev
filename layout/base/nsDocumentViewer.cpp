@@ -2166,6 +2166,16 @@ StyleBackendTypeForDocument(nsIDocument* aDocument, nsIDocShell* aContainer)
   // here about whether to use a Gecko- or Servo-backed style system), so
   // we avoid Servo-backed style sets for SVG documents.
 
+  nsCString spec;
+  nsIURI* uri = aDocument->GetDocumentURI();
+  if (!uri) {
+    return StyleBackendType::Gecko;
+  }
+  uri->GetSpec(spec);
+  if (spec.Find("simple.html") == -1 &&
+      spec.Find("Obama") == -1) {
+    return StyleBackendType::Gecko;
+  }
   return nsPresContext::StyloEnabled() &&
          aDocument->IsHTMLOrXHTML() &&
          aContainer &&
