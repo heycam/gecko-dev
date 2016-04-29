@@ -1374,7 +1374,7 @@ pref("privacy.userContext.enabled", false);
 // We leave it here set to false to reset users' defaults and allow
 // us to change everybody to true in the future, when desired.
 pref("browser.tabs.remote.autostart.1", false);
-pref("browser.tabs.remote.autostart.2", true);
+pref("browser.tabs.remote.autostart.2", false);
 #endif
 
 // For the about:tabcrashed page
