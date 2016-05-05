@@ -776,6 +776,22 @@ nsPresContext::UpdateAfterPreferencesChanged()
   RebuildAllStyleData(hint, eRestyle_Subtree);
 }
 
+RestyleManagerHandle
+nsPresContext::RestyleManager()
+{
+  if (!mRestyleManager) {
+    if (mShell && mShell->StyleSet()->IsServo()) {
+      mRestyleManager = new ServoRestyleManager;
+    } else {
+      if (!mShell) {
+        NS_WARNING("stylo: don't know what type of RestyleManager to create");
+      }
+      mRestyleManager = new mozilla::RestyleManager(this);
+    }
+  }
+  return mRestyleManager;
+}
+
 nsresult
 nsPresContext::Init(nsDeviceContext* aDeviceContext)
 {
@@ -840,7 +856,7 @@ nsPresContext::Init(nsDeviceContext* aDeviceContext)
   // Since RestyleManager is also the name of a method of nsPresContext,
   // it is necessary to prefix the class with the mozilla namespace
   // here.
-  mRestyleManager = new mozilla::RestyleManager(this);
+  // mRestyleManager = new mozilla::RestyleManager(this);
 
   mLangService = do_GetService(NS_LANGUAGEATOMSERVICE_CONTRACTID);
 
