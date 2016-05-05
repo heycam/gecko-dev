@@ -239,7 +239,7 @@ public:
 
   nsRefreshDriver* RefreshDriver() { return mRefreshDriver; }
 
-  mozilla::RestyleManagerHandle RestyleManager() { return mRestyleManager; }
+  mozilla::RestyleManagerHandle RestyleManager();
 
   mozilla::CounterStyleManager* CounterStyleManager() {
     return mCounterStyleManager;
