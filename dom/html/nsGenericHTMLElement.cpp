@@ -110,6 +110,7 @@
 #include "mozilla/StyleSetHandle.h"
 #include "mozilla/StyleSetHandleInlines.h"
 #include "ReferrerPolicy.h"
+#include "nsProxyRelease.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -1066,9 +1067,12 @@ nsGenericHTMLElement::ParseBackgroundAttribute(int32_t aNamespaceID,
       return false;
     }
 
-    mozilla::css::URLValue *url =
-      new mozilla::css::URLValue(uri, buffer, doc->GetDocumentURI(),
-                                 NodePrincipal());
+    nsMainThreadPtrHandle<nsIURI> referrer(
+      new nsMainThreadPtrHolder<nsIURI>(doc->GetDocumentURI()));
+    nsMainThreadPtrHandle<nsIPrincipal> principal(
+      new nsMainThreadPtrHolder<nsIPrincipal>(NodePrincipal()));
+    mozilla::css::URLValue* url =
+      new mozilla::css::URLValue(uri, buffer, referrer, principal);
     aResult.SetTo(url, &aValue);
     return true;
   }

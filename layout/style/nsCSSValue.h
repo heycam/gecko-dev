@@ -20,6 +20,7 @@
 #include "nsCSSProperty.h"
 #include "nsColor.h"
 #include "nsCoord.h"
+#include "nsProxyRelease.h"
 #include "nsRefPtrHashtable.h"
 #include "nsString.h"
 #include "nsStringBuffer.h"
@@ -95,11 +96,15 @@ struct URLValueData
   // For both constructors aOriginPrincipal must not be null.
   // Construct with a base URI; this will create the actual URI lazily from
   // aString and aBaseURI.
-  URLValueData(nsStringBuffer* aString, nsIURI* aBaseURI, nsIURI* aReferrer,
-               nsIPrincipal* aOriginPrincipal);
+  URLValueData(nsStringBuffer* aString,
+               nsMainThreadPtrHandle<nsIURI> aBaseURI,
+               nsMainThreadPtrHandle<nsIURI> aReferrer,
+               nsMainThreadPtrHandle<nsIPrincipal> aOriginPrincipal);
   // Construct with the actual URI.
-  URLValueData(nsIURI* aURI, nsStringBuffer* aString, nsIURI* aReferrer,
-               nsIPrincipal* aOriginPrincipal);
+  URLValueData(nsIURI* aURI,
+               nsStringBuffer* aString,
+               nsMainThreadPtrHandle<nsIURI> aReferrer,
+               nsMainThreadPtrHandle<nsIPrincipal> aOriginPrincipal);
 
   bool operator==(const URLValueData& aOther) const;
 
@@ -121,8 +126,8 @@ private:
   mutable nsCOMPtr<nsIURI> mURI;
 public:
   RefPtr<nsStringBuffer> mString;
-  nsCOMPtr<nsIURI> mReferrer;
-  nsCOMPtr<nsIPrincipal> mOriginPrincipal;
+  nsMainThreadPtrHandle<nsIURI> mReferrer;
+  nsMainThreadPtrHandle<nsIPrincipal> mOriginPrincipal;
 private:
   mutable bool mURIResolved;
 
@@ -132,12 +137,19 @@ private:
 
 struct URLValue : public URLValueData
 {
-  URLValue(nsStringBuffer* aString, nsIURI* aBaseURI, nsIURI* aReferrer,
-           nsIPrincipal* aOriginPrincipal)
+  URLValue(nsStringBuffer* aString,
+           nsMainThreadPtrHandle<nsIURI> aBaseURI,
+           nsMainThreadPtrHandle<nsIURI> aReferrer,
+           nsMainThreadPtrHandle<nsIPrincipal> aOriginPrincipal)
     : URLValueData(aString, aBaseURI, aReferrer, aOriginPrincipal) {}
-  URLValue(nsIURI* aURI, nsStringBuffer* aString, nsIURI* aReferrer,
-           nsIPrincipal* aOriginPrincipal)
+  URLValue(nsIURI* aURI,
+           nsStringBuffer* aString,
+           nsMainThreadPtrHandle<nsIURI> aReferrer,
+           nsMainThreadPtrHandle<nsIPrincipal> aOriginPrincipal)
     : URLValueData(aURI, aString, aReferrer, aOriginPrincipal) {}
+
+  URLValue(const URLValue&) = delete;
+  URLValue& operator=(const URLValue&) = delete;
 
   size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
@@ -145,7 +157,7 @@ protected:
   ~URLValue() {}
 
 public:
-  NS_INLINE_DECL_REFCOUNTING(URLValue)
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(URLValue)
 };
 
 struct ImageValue : public URLValueData
@@ -156,6 +168,9 @@ struct ImageValue : public URLValueData
   // aString must not be null.
   ImageValue(nsIURI* aURI, nsStringBuffer* aString, nsIURI* aReferrer,
              nsIPrincipal* aOriginPrincipal, nsIDocument* aDocument);
+
+  ImageValue(const ImageValue&) = delete;
+  ImageValue& operator=(const ImageValue&) = delete;
 
   // XXXheycam We should have our own SizeOfIncludingThis method.
 

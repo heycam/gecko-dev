@@ -30,6 +30,7 @@
 #include "nsIDocument.h"
 #include "nsIFrame.h"
 #include "gfx2DGlue.h"
+#include "nsProxyRelease.h"
 
 using namespace mozilla;
 using namespace mozilla::gfx;
@@ -3962,11 +3963,13 @@ StyleAnimationValue::ExtractComputedValue(nsCSSProperty aProperty,
             nsIDocument* doc = aStyleContext->PresContext()->Document();
             RefPtr<nsStringBuffer> uriAsStringBuffer =
               GetURIAsUtf16StringBuffer(clipPath.GetURL());
+            nsMainThreadPtrHandle<nsIURI> referrer(
+              new nsMainThreadPtrHolder<nsIURI>(doc->GetDocumentURI()));
+            nsMainThreadPtrHandle<nsIPrincipal> principal(
+              new nsMainThreadPtrHolder<nsIPrincipal>(doc->NodePrincipal()));
             RefPtr<mozilla::css::URLValue> url =
-              new mozilla::css::URLValue(clipPath.GetURL(),
-                                         uriAsStringBuffer,
-                                         doc->GetDocumentURI(),
-                                         doc->NodePrincipal());
+              new mozilla::css::URLValue(clipPath.GetURL(), uriAsStringBuffer,
+                                         referrer, principal);
             auto result = MakeUnique<nsCSSValue>();
             result->SetURLValue(url);
             aComputedValue.SetAndAdoptCSSValueValue(result.release(), eUnit_URL);
@@ -4002,11 +4005,15 @@ StyleAnimationValue::ExtractComputedValue(nsCSSProperty aProperty,
               nsIDocument* doc = aStyleContext->PresContext()->Document();
               RefPtr<nsStringBuffer> uriAsStringBuffer =
                 GetURIAsUtf16StringBuffer(filter.GetURL());
+              nsMainThreadPtrHandle<nsIURI> referrer(
+                new nsMainThreadPtrHolder<nsIURI>(doc->GetDocumentURI()));
+              nsMainThreadPtrHandle<nsIPrincipal> principal(
+                new nsMainThreadPtrHolder<nsIPrincipal>(doc->NodePrincipal()));
               RefPtr<mozilla::css::URLValue> url =
                 new mozilla::css::URLValue(filter.GetURL(),
                                            uriAsStringBuffer,
-                                           doc->GetDocumentURI(),
-                                           doc->NodePrincipal());
+                                           referrer,
+                                           principal);
               item->mValue.SetURLValue(url);
             } else {
               nsCSSKeyword functionName =
@@ -4179,11 +4186,15 @@ StyleAnimationValue::ExtractComputedValue(nsCSSProperty aProperty,
           GetURIAsUtf16StringBuffer(paint.mPaint.mPaintServer);
         NS_ENSURE_TRUE(!!uriAsStringBuffer, false);
         nsIDocument* doc = aStyleContext->PresContext()->Document();
+        nsMainThreadPtrHandle<nsIURI> referrer(
+          new nsMainThreadPtrHolder<nsIURI>(doc->GetDocumentURI()));
+        nsMainThreadPtrHandle<nsIPrincipal> principal(
+          new nsMainThreadPtrHolder<nsIPrincipal>(doc->NodePrincipal()));
         RefPtr<mozilla::css::URLValue> url =
           new mozilla::css::URLValue(paint.mPaint.mPaintServer,
                                      uriAsStringBuffer,
-                                     doc->GetDocumentURI(),
-                                     doc->NodePrincipal());
+                                     referrer,
+                                     principal);
         pair->mXValue.SetURLValue(url);
         pair->mYValue.SetColorValue(paint.mFallbackColor);
         aComputedValue.SetAndAdoptCSSValuePairValue(pair.forget(),

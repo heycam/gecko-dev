@@ -55,6 +55,7 @@
 #include "mozilla/dom/AnimationEffectReadOnlyBinding.h"
 #include "mozilla/dom/URL.h"
 #include "gfxFontFamilyList.h"
+#include "nsProxyRelease.h"
 
 using namespace mozilla;
 using namespace mozilla::css;
@@ -8214,9 +8215,16 @@ CSSParserImpl::SetValueToURL(nsCSSValue& aValue, const nsString& aURL)
 
   RefPtr<nsStringBuffer> buffer(nsCSSValue::BufferFromString(aURL));
 
+  nsMainThreadPtrHandle<nsIURI> baseURI(
+    new nsMainThreadPtrHolder<nsIURI>(mBaseURI));
+  nsMainThreadPtrHandle<nsIURI> referrer(
+    new nsMainThreadPtrHolder<nsIURI>(mSheetURI));
+  nsMainThreadPtrHandle<nsIPrincipal> principal(
+    new nsMainThreadPtrHolder<nsIPrincipal>(mSheetPrincipal));
+
   // Note: urlVal retains its own reference to |buffer|.
   mozilla::css::URLValue *urlVal =
-    new mozilla::css::URLValue(buffer, mBaseURI, mSheetURI, mSheetPrincipal);
+    new mozilla::css::URLValue(buffer, baseURI, referrer, principal);
   aValue.SetURLValue(urlVal);
   return true;
 }
