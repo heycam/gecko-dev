@@ -11,6 +11,7 @@
 #include "nsIDOMNode.h"
 #include "nsIDocument.h"
 #include "nsINode.h"
+#include "nsIPrincipal.h"
 #include "nsNameSpaceManager.h"
 #include "nsString.h"
 #include "nsStyleStruct.h"
@@ -214,6 +215,9 @@ Gecko_CopyListStyleTypeFrom(nsStyleList* dst, const nsStyleList* src)
 {
   dst->SetCounterStyle(src->GetCounterStyle());
 }
+
+NS_IMPL_HOLDER_FFI_REFCOUNTING_WITH_NAME(RawGeckoPrincipal, Principal)
+NS_IMPL_HOLDER_FFI_REFCOUNTING_WITH_NAME(RawGeckoURI, URI)
 
 #define STYLE_STRUCT(name, checkdata_cb)                                      \
                                                                               \
