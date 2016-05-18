@@ -219,6 +219,38 @@ Gecko_CopyListStyleTypeFrom(nsStyleList* dst, const nsStyleList* src)
 NS_IMPL_HOLDER_FFI_REFCOUNTING_WITH_NAME(RawGeckoPrincipal, Principal)
 NS_IMPL_HOLDER_FFI_REFCOUNTING_WITH_NAME(RawGeckoURI, URI)
 
+void
+Gecko_SetBinding(nsStyleDisplay* aDisplay,
+                 const uint8_t* aURLString, uint32_t aURLStringLength,
+                 ThreadSafeURIHolder* aBaseURI,
+                 ThreadSafeURIHolder* aReferrer,
+                 ThreadSafePrincipalHolder* aPrincipal)
+{
+  MOZ_ASSERT(aDisplay);
+  MOZ_ASSERT(aURLString);
+  MOZ_ASSERT(aBaseURI);
+  MOZ_ASSERT(aReferrer);
+  MOZ_ASSERT(aPrincipal);
+
+  nsString url;
+  nsDependentCSubstring urlString(reinterpret_cast<const char*>(aURLString),
+                                  aURLStringLength);
+  AppendUTF8toUTF16(urlString, url);
+  RefPtr<nsStringBuffer> urlBuffer = nsCSSValue::BufferFromString(url);
+
+  aDisplay->mBinding =
+    new css::URLValue(urlBuffer,
+                      nsMainThreadPtrHandle<nsIURI>(aBaseURI),
+                      nsMainThreadPtrHandle<nsIURI>(aReferrer),
+                      nsMainThreadPtrHandle<nsIPrincipal>(aPrincipal));
+}
+
+void
+Gecko_CopyBindingFrom(nsStyleDisplay* aDest, const nsStyleDisplay* aSrc)
+{
+  aDest->mBinding = aSrc->mBinding;
+}
+
 #define STYLE_STRUCT(name, checkdata_cb)                                      \
                                                                               \
 void                                                                          \
