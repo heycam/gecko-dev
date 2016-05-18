@@ -112,7 +112,10 @@ NS_DECL_HOLDER_FFI_REFCOUNTING_WITH_NAME(RawGeckoURI, URI)
 // TODO: Make these return already_AddRefed and UniquePtr when the binding
 // generator is smart enough to handle them.
 RawServoStyleSheet* Servo_StylesheetFromUTF8Bytes(const uint8_t* bytes, uint32_t length,
-                                                  mozilla::css::SheetParsingMode parsing_mode);
+                                                  mozilla::css::SheetParsingMode parsing_mode,
+                                                  ThreadSafeURIHolder* base,
+                                                  ThreadSafeURIHolder* referrer,
+                                                  ThreadSafePrincipalHolder* principal);
 void Servo_AddRefStyleSheet(RawServoStyleSheet* sheet);
 void Servo_ReleaseStyleSheet(RawServoStyleSheet* sheet);
 void Servo_AppendStyleSheet(RawServoStyleSheet* sheet, RawServoStyleSet* set);
