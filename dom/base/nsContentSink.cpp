@@ -216,9 +216,13 @@ nsContentSink::StyleSheetLoaded(StyleSheetHandle aSheet,
     NS_ASSERTION(mPendingSheetCount > 0, "How'd that happen?");
     --mPendingSheetCount;
 
-    if (mPendingSheetCount == 0 && mDeferredFlushTags) {
+    if (mPendingSheetCount == 0 &&
+        (mDeferredLayoutStart || mDeferredFlushTags)) {
       if (mDeferredFlushTags) {
         FlushTags();
+      }
+      if (mModelBuilt) {
+        StartLayout(false);
       }
 
       // Go ahead and try to scroll to our ref if we have one
@@ -1455,6 +1459,8 @@ nsContentSink::EndUpdate(nsIDocument *aDocument, nsUpdateType aUpdateType)
 void
 nsContentSink::DidBuildModelImpl(bool aTerminated)
 {
+  mModelBuilt = true;
+
   if (mDocument) {
     MOZ_ASSERT(aTerminated ||
                mDocument->GetReadyStateEnum() ==
@@ -1480,7 +1486,7 @@ nsContentSink::DidBuildModelImpl(bool aTerminated)
     mNotificationTimer = 0;
   }	
 
-  if (mDeferredLayoutStart) {
+  if (mPendingSheetCount == 0) {
     // We might not have really started layout, since this sheet was still
     // loading.  Do it now.  Probably doesn't matter whether we do this
     // before or after we unblock scripts, but before feels saner.  Note
