@@ -144,7 +144,7 @@
  * use of concurrent allocation, so the increased fragmentation associated with
  * multiple arenas is not warranted.
  */
-#define	MOZ_MEMORY_NARENAS_DEFAULT_ONE
+//#define	MOZ_MEMORY_NARENAS_DEFAULT_ONE
 
 /*
  * Pass this set of options to jemalloc as its default. It does not override
