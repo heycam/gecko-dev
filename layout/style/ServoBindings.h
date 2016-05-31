@@ -224,6 +224,8 @@ void Servo_Initialize();
 void Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set);
 void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set);
 
+uint32_t Servo_StyleWorkerThreadCount();
+
 // Temporary string-based APIs for attributes and element names.
 //
 // These won't ever land in mozilla-central, as we'll replace them

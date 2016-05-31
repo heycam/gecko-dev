@@ -813,6 +813,7 @@ nsDocShell::nsDocShell()
   , mBlankTiming(false)
   , mFrameType(FRAME_TYPE_REGULAR)
   , mParentCharsetSource(0)
+  , mWantsStylo(true)
   , mJSRunToCompletionDepth(0)
 {
   AssertOriginAttributesMatchPrivateBrowsing();
