@@ -683,6 +683,19 @@
              context="toolbar-context-menu">
 
       <hbox id="nav-bar-customization-target" flex="1">
+        <hbox id="stylo-controls" flex="0" style="-moz-box-align: center">
+          <menulist id="stylo-enabled" oncommand="UpdateStyloEnabled()">
+            <menupopup>
+              <menuitem label="Stylo enabled" selected="true"/>
+              <menuitem label="Stylo disabled"/>
+            </menupopup>
+          </menulist>
+          <button id="stylo-restyle" label="Restyle" disabled="true" oncommand="ForceRestyle()" tooltiptext="Force a whole document restyle for timing (only needed when Stylo is disabled)"/>
+          <box tooltiptext="Time taken to style the document" style="width: 60px; cursor: default">
+            <box flex="1"/>
+            <box flex="0" id="stylo-time" style="padding-right: 8px">----.- ms</box>
+          </box>
+        </hbox>
         <toolbaritem id="urlbar-container" flex="400" persist="width"
                      removable="false"
                      class="chromeclass-location" overflows="false">
@@ -983,7 +996,6 @@
 #endif
                        tooltiptext="&fullScreenRestore.tooltip;"
                        oncommand="BrowserFullScreen();"/>
-
         <toolbarbutton id="close-button"
                        tooltiptext="&fullScreenClose.tooltip;"
                        oncommand="BrowserTryToCloseWindow();"/>

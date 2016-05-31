@@ -443,3 +443,12 @@ Document implements ParentNode;
 Document implements OnErrorEventHandlerForNodes;
 Document implements GeometryUtils;
 Document implements FontFaceSource;
+
+partial interface Document {
+  [ChromeOnly] readonly attribute boolean usingStylo;
+  [ChromeOnly] readonly attribute unsigned long styloThreads;
+  [ChromeOnly] readonly attribute boolean allowsStylo;
+  [ChromeOnly] readonly attribute unsigned long long restyleTime;
+  [ChromeOnly] void updateRestyleTime();
+  [ChromeOnly] void setWantsStylo(boolean wants);
+};

@@ -36,6 +36,7 @@
 
 class nsPresContext;
 class nsIContent;
+class nsIDocShell;
 class nsIAtom;
 class nsIScrollableFrame;
 class nsIDOMEvent;

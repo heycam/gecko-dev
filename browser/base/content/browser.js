@@ -2451,6 +2451,43 @@ function losslessDecodeURI(aURI) {
   return value;
 }
 
+function UpdateStyloState()
+{
+  var menulist = document.getElementById("stylo-enabled");
+  var restyle = document.getElementById("stylo-restyle");
+  var time = document.getElementById("stylo-time");
+
+  var doc = gBrowser.selectedBrowser.contentDocument;
+  var usingStylo = doc.usingStylo;
+  var styloThreads = doc.styloThreads;
+  var allowsStylo = doc.allowsStylo;
+  var restyleTime = doc.restyleTime;
+
+  menulist._updating = true;
+  menulist.selectedIndex = usingStylo ? 0 : 1;
+  menulist._updating = false;
+  menulist.getItemAtIndex(0).label = "Stylo enabled" + (styloThreads ? " (" + styloThreads + " thread" + (styloThreads == 1 ? "" : "s") + ")" : "");
+  menulist.disabled = !allowsStylo;
+  restyle.disabled = usingStylo || !allowsStylo;
+  time.textContent = (allowsStylo && restyleTime ? Math.round(restyleTime / 100) / 10 : "----.-") + " ms";
+}
+
+function ForceRestyle()
+{
+  gBrowser.selectedBrowser.contentDocument.updateRestyleTime();
+  UpdateStyloState();
+}
+
+function UpdateStyloEnabled()
+{
+  var menulist = document.getElementById("stylo-enabled");
+  if (menulist._updating) {
+    return;
+  }
+  gBrowser.selectedBrowser.contentDocument.setWantsStylo(menulist.selectedIndex == 0);
+  BrowserReload();
+}
+
 function UpdateUrlbarSearchSplitterState()
 {
   var splitter = document.getElementById("urlbar-search-splitter");
@@ -4541,6 +4578,7 @@ var XULBrowserWindow = {
   asyncUpdateUI: function () {
     FeedHandler.updateFeeds();
     BrowserSearch.updateOpenSearchBadge();
+    UpdateStyloState();
   },
 
   // Left here for add-on compatibility, see bug 752434

@@ -195,6 +195,14 @@ public:
   nsIDocument();
 #endif
 
+  bool UsingStylo() const;
+  uint32_t StyloThreads() const;
+  bool AllowsStylo();
+  uint64_t RestyleTime();
+  uint64_t mRestyleTime;
+  void UpdateRestyleTime();
+  void SetWantsStylo(bool aWants);
+
   /**
    * Let the document know that we're starting to load data into it.
    * @param aCommand The parser command. Must not be null.

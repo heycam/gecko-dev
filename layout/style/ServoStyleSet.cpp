@@ -20,6 +20,7 @@ ServoStyleSet::ServoStyleSet()
   : mPresContext(nullptr)
   , mRawSet(Servo_InitStyleSet())
   , mBatching(0)
+  , mRestyleTime(0)
 {
 }
 
@@ -73,7 +74,10 @@ ServoStyleSet::EndUpdate()
 void
 ServoStyleSet::ForceRestyle(nsPresContext* aPresContext)
 {
+  PRTime t1 = PR_Now();
   Servo_RestyleDocument(aPresContext->Document(), mRawSet.get());
+  PRTime t2 = PR_Now();
+  mRestyleTime = t2 - t1;
 }
 
 already_AddRefed<nsStyleContext>

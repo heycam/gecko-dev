@@ -814,6 +814,7 @@ nsDocShell::nsDocShell()
   , mFrameType(FRAME_TYPE_REGULAR)
   , mPrivateBrowsingId(0)
   , mParentCharsetSource(0)
+  , mWantsStylo(true)
   , mJSRunToCompletionDepth(0)
 {
   AssertOriginAttributesMatchPrivateBrowsing();

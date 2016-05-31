@@ -246,6 +246,8 @@ void Servo_Initialize();
 void Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set);
 void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set);
 
+uint32_t Servo_StyleWorkerThreadCount();
+
 // Style-struct management.
 #define STYLE_STRUCT(name, checkdata_cb) \
 struct nsStyle##name; \
