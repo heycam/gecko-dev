@@ -338,6 +338,8 @@ protected:
   nsRevocableEventPtr<nsRunnableMethod<nsContentSink, void, false> >
     mProcessLinkHeaderEvent;
 
+  bool mModelBuilt;
+
   // Do we notify based on time?
   static bool sNotifyOnTimer;
   // Back off timer notification after count.
