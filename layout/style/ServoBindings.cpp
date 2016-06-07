@@ -217,6 +217,16 @@ Gecko_ClassOrClassList(RawGeckoElement* aElement,
   return atomArray->Length();
 }
 
+ServoDeclarationBlock*
+Gecko_GetServoDeclarationBlock(RawGeckoElement* aElement)
+{
+  const nsAttrValue* attr = aElement->GetParsedAttr(nsGkAtoms::style);
+  if (!attr || attr->Type() != nsAttrValue::eServoDeclarationBlock) {
+    return nullptr;
+  }
+  return attr->GetServoDeclarationBlock();
+}
+
 ServoNodeData*
 Gecko_GetNodeData(RawGeckoNode* aNode)
 {
@@ -531,6 +541,35 @@ void
 Servo_DropStyleSet(RawServoStyleSet* set)
 {
   MOZ_CRASH("stylo: shouldn't be calling Servo_DropStyleSet in a "
+            "non-MOZ_STYLO build");
+}
+
+ServoDeclarationBlock*
+Servo_ParseStyleAttribute(const uint8_t* bytes, uint8_t length,
+                          nsHTMLCSSStyleSheet* cache)
+{
+  MOZ_CRASH("stylo: shouldn't be calling Servo_ParseStyleAttribute in a "
+            "non-MOZ_STYLO build");
+}
+
+void
+Servo_AddRefDeclarationBlock(ServoDeclarationBlock* declarations)
+{
+  MOZ_CRASH("stylo: shouldn't be calling Servo_AddRefDeclarationBlock in a "
+            "non-MOZ_STYLO build");
+}
+
+void
+Servo_ReleaseDeclarationBlock(ServoDeclarationBlock* declarations)
+{
+  MOZ_CRASH("stylo: shouldn't be calling Servo_ReleaseDeclarationBlock in a "
+            "non-MOZ_STYLO build");
+}
+
+nsHTMLCSSStyleSheet*
+Servo_GetDeclarationBlockCache(ServoDeclarationBlock* declarations)
+{
+  MOZ_CRASH("stylo: shouldn't be calling Servo_GetDeclarationBlockCache in a "
             "non-MOZ_STYLO build");
 }
 

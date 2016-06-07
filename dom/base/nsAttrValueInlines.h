@@ -48,6 +48,7 @@ struct MiscContainer final
         const mozilla::SVGStringList* mSVGStringList;
         const mozilla::SVGTransformList* mSVGTransformList;
         const nsSVGViewBox* mSVGViewBox;
+        ServoDeclarationBlock* mServoDeclarationBlock;
       };
       uint32_t mRefCount : 31;
       uint32_t mCached : 1;
@@ -86,7 +87,8 @@ public:
     // Nothing stops us from refcounting (and sharing) other types of
     // MiscContainer (except eDoubleValue types) but there's no compelling
     // reason to 
-    return mType == nsAttrValue::eCSSDeclaration;
+    return mType == nsAttrValue::eCSSDeclaration ||
+           mType == nsAttrValue::eServoDeclarationBlock;
   }
 
   inline int32_t AddRef() {
@@ -185,6 +187,13 @@ nsAttrValue::GetIntMarginValue(nsIntMargin& aMargin) const
   return true;
 }
 
+inline ServoDeclarationBlock*
+nsAttrValue::GetServoDeclarationBlock() const
+{
+  NS_PRECONDITION(Type() == eServoDeclarationBlock, "wrong type");
+  return GetMiscContainer()->mValue.mServoDeclarationBlock;
+}
+
 inline bool
 nsAttrValue::IsSVGType(ValueType aType) const
 {
@@ -198,7 +207,7 @@ nsAttrValue::StoresOwnData() const
     return true;
   }
   ValueType t = Type();
-  return t != eCSSDeclaration && !IsSVGType(t);
+  return t != eCSSDeclaration && t != eServoDeclarationBlock && !IsSVGType(t);
 }
 
 inline void

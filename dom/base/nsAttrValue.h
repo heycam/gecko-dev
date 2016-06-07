@@ -32,6 +32,7 @@ class nsAString;
 class nsIDocument;
 class nsStyledElementNotElementCSSInlineStyle;
 struct MiscContainer;
+struct ServoDeclarationBlock;
 
 namespace mozilla {
 namespace css {
@@ -114,6 +115,7 @@ public:
     ,eSVGTransformList =       0x20
     ,eSVGViewBox =             0x21
     ,eSVGTypesEnd =            eSVGViewBox
+    ,eServoDeclarationBlock =  0x22
   };
 
   nsAttrValue();
@@ -165,6 +167,8 @@ public:
   void SetTo(const mozilla::SVGTransformList& aValue,
              const nsAString* aSerialized);
   void SetTo(const nsSVGViewBox& aValue, const nsAString* aSerialized);
+  void SetToAlreadyAddrefed(ServoDeclarationBlock* aDeclarationBlock,
+                            const nsAString* aSerialized);
 
   /**
    * Sets this object with the string or atom representation of aValue.
@@ -201,6 +205,7 @@ public:
   inline mozilla::css::ImageValue* GetImageValue() const;
   inline double GetDoubleValue() const;
   bool GetIntMarginValue(nsIntMargin& aMargin) const;
+  inline ServoDeclarationBlock* GetServoDeclarationBlock() const;
 
   /**
    * Returns the string corresponding to the stored enum value.

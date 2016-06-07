@@ -38,12 +38,24 @@ nsHTMLCSSStyleSheet::~nsHTMLCSSStyleSheet()
 
     // Ideally we'd just call MiscContainer::Evict, but we can't do that since
     // we're iterating the hashtable.
-    MOZ_ASSERT(value->mType == nsAttrValue::eCSSDeclaration);
+    switch (value->mType) {
+      case nsAttrValue::eCSSDeclaration: {
+        css::Declaration* declaration = value->mValue.mCSSDeclaration;
+        declaration->SetHTMLCSSStyleSheet(nullptr);
+        break;
+      }
+      case nsAttrValue::eServoDeclarationBlock: {
+        ServoDeclarationBlock* declarations =
+          value->mValue.mServoDeclarationBlock;
+        Servo_ClearDeclarationBlockCachePointer(declarations);
+        break;
+      }
+      default:
+        MOZ_ASSERT_UNREACHABLE("unexpected cached nsAttrValue type");
+        break;
+    }
 
-    css::Declaration* declaration = value->mValue.mCSSDeclaration;
-    declaration->SetHTMLCSSStyleSheet(nullptr);
     value->mValue.mCached = 0;
-
     iter.Remove();
   }
 }
