@@ -97,19 +97,39 @@ nsConditionalResetStyleData::GetConditionalStyleData(nsStyleStructID aSID,
   return nullptr;
 }
 
-#define NS_SET_IMAGE_REQUEST(method_, context_, request_)                     \
-  if ((context_)->PresContext()->IsDynamic()) {                               \
-    method_(request_);                                                        \
-  } else {                                                                    \
-    RefPtr<imgRequestProxy> req = nsContentUtils::GetStaticRequest(request_); \
-    method_(req);                                                             \
-  }
+static void
+SetImageData(nsStyleImage& aImage, imgRequestProxy* aRequest)
+{
+  aImage.SetImageData(aRequest);
+}
 
-#define NS_SET_IMAGE_REQUEST_WITH_DOC(method_, context_, requestgetter_)      \
-  {                                                                           \
-    nsIDocument* doc = (context_)->PresContext()->Document();                 \
-    NS_SET_IMAGE_REQUEST(method_, context_, requestgetter_(doc))              \
+static void
+SetImageData(nsStyleList& aList, imgRequestProxy* aRequest)
+{
+  aList.SetListStyleImage(aRequest);
+}
+
+static void
+SetImageData(nsStyleContentData& aData, imgRequestProxy* aRequest)
+{
+  aData.SetImage(aRequest);
+}
+
+template<typename T>
+static void
+SetImageRequest(T& aObject,
+                nsPresContext* aPresContext,
+                const nsCSSValue& aValue)
+{
+  nsIDocument* doc = aPresContext->Document();
+  imgRequestProxy* req = aValue.GetImageValue(doc);
+  if (aPresContext->IsDynamic()) {
+    SetImageData(aObject, req);
+  } else {
+    RefPtr<imgRequestProxy> staticReq = nsContentUtils::GetStaticRequest(req);
+    SetImageData(aObject, staticReq);
   }
+}
 
 /* Helper function to convert a CSS <position> specified value into its
  * computed-style form. */
@@ -1196,9 +1216,7 @@ static void SetStyleImageToImageRect(nsStyleContext* aStyleContext,
 
   // <uri>
   if (arr->Item(1).GetUnit() == eCSSUnit_Image) {
-    NS_SET_IMAGE_REQUEST_WITH_DOC(aResult.SetImageData,
-                                  aStyleContext,
-                                  arr->Item(1).GetImageValue)
+    SetImageRequest(aResult, aStyleContext->PresContext(), arr->Item(1));
   } else {
     NS_WARNING("nsCSSValue::Image::Image() failed?");
   }
@@ -1232,9 +1250,7 @@ static void SetStyleImage(nsStyleContext* aStyleContext,
 
   switch (aValue.GetUnit()) {
     case eCSSUnit_Image:
-      NS_SET_IMAGE_REQUEST_WITH_DOC(aResult.SetImageData,
-                                    aStyleContext,
-                                    aValue.GetImageValue)
+      SetImageRequest(aResult, aStyleContext->PresContext(), aValue);
       break;
     case eCSSUnit_Function:
       if (aValue.EqualsFunction(eCSSKeyword__moz_image_rect)) {
@@ -7915,9 +7931,7 @@ nsRuleNode::ComputeListData(void* aStartStruct,
   // list-style-image: url, none, inherit
   const nsCSSValue* imageValue = aRuleData->ValueForListStyleImage();
   if (eCSSUnit_Image == imageValue->GetUnit()) {
-    NS_SET_IMAGE_REQUEST_WITH_DOC(list->SetListStyleImage,
-                                  aContext,
-                                  imageValue->GetImageValue)
+    SetImageRequest(*list, mPresContext, *imageValue);
   }
   else if (eCSSUnit_None == imageValue->GetUnit() ||
            eCSSUnit_Initial == imageValue->GetUnit()) {
@@ -7926,9 +7940,7 @@ nsRuleNode::ComputeListData(void* aStartStruct,
   else if (eCSSUnit_Inherit == imageValue->GetUnit() ||
            eCSSUnit_Unset == imageValue->GetUnit()) {
     conditions.SetUncacheable();
-    NS_SET_IMAGE_REQUEST(list->SetListStyleImage,
-                         aContext,
-                         parentList->GetListStyleImage())
+    list->SetListStyleImage(parentList->GetListStyleImage());
   }
 
   // list-style-position: enum, inherit, initial
@@ -8840,9 +8852,7 @@ nsRuleNode::ComputeContentData(void* aStartStruct,
           }
           data.mType = type;
           if (type == eStyleContentType_Image) {
-            NS_SET_IMAGE_REQUEST_WITH_DOC(data.SetImage,
-                                          aContext,
-                                          value.GetImageValue);
+            SetImageRequest(data, mPresContext, value);
           }
           else if (type <= eStyleContentType_Attr) {
             value.GetStringValue(buffer);
