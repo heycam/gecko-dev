@@ -34,6 +34,7 @@
 #include "mozilla/Likely.h"
 #include "nsIURI.h"
 #include "nsIDocument.h"
+#include "nsNetUtil.h"
 #include <algorithm>
 
 using namespace mozilla;
@@ -64,9 +65,11 @@ EqualURIs(mozilla::css::URLValue *aURI1, mozilla::css::URLValue *aURI2)
          (aURI1 && aURI2 && aURI1->URIEquals(*aURI2));
 }
 
-static bool
-EqualImages(imgIRequest *aImage1, imgIRequest* aImage2)
+static bool EqualImages(imgRequestProxy* aImage1,
+                        imgRequestProxy* aImage2)
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   if (aImage1 == aImage2) {
     return true;
   }
@@ -617,7 +620,9 @@ nsStyleList::nsStyleList(const nsStyleList& aSource)
   , mQuotes(aSource.mQuotes)
   , mImageRegion(aSource.mImageRegion)
 {
-  SetListStyleImage(aSource.GetListStyleImage());
+  bool needsLocking;
+  SetListStyleImage(aSource.GetListStyleImage(), needsLocking);
+  // XXX can't return needsLocking here :(
   MOZ_COUNT_CTOR(nsStyleList);
 }
 
@@ -684,7 +689,7 @@ nsStyleList::CalcDifference(const nsStyleList& aOther) const
   }
   if (mListStylePosition != aOther.mListStylePosition)
     return NS_STYLE_HINT_FRAMECHANGE;
-  if (EqualImages(mListStyleImage, aOther.mListStyleImage) &&
+  if (EqualImages(GetListStyleImageRequest(), aOther.GetListStyleImageRequest()) &&
       mCounterStyle == aOther.mCounterStyle) {
     if (mImageRegion.IsEqualInterior(aOther.mImageRegion)) {
       return NS_STYLE_HINT_NONE;
@@ -1878,6 +1883,59 @@ nsStyleGradient::HasCalc()
 }
 
 // --------------------
+// nsStyleImageRequest
+
+nsStyleImageRequest::nsStyleImageRequest(imgRequestProxy* aRequestProxy)
+{
+  MOZ_ASSERT(aRequestProxy);
+  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(aRequestProxy);
+}
+
+nsStyleImageRequest::nsStyleImageRequest(
+    const nsCSubstring& aURLString,
+    already_AddRefed<PtrHolder<nsIURI>> aBaseURI,
+    already_AddRefed<PtrHolder<nsIURI>> aReferrer,
+    already_AddRefed<PtrHolder<nsIPrincipal>> aPrincipal)
+  : mDetails(new Details(aURLString, Move(aBaseURI), Move(aReferrer),
+                         Move(aPrincipal)))
+{
+}
+
+void
+nsStyleImageRequest::Resolve(nsPresContext* aPresContext)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (!mDetails) {
+    MOZ_ASSERT(mRequestProxy);
+    return;
+  }
+
+  nsCOMPtr<nsIURI> url;
+  nsresult rv =
+    NS_NewURI(getter_AddRefs(url), mDetails->mURLString, nullptr, mDetails->mBaseURI);
+
+  // For now, just create unique nsCSSValue/ImageValue objects.  We should
+  // really store the ImageValue on the Servo specified value, so that we can
+  // share imgRequestProxys that come from the same rule in the same
+  // document.
+//   printf("Resolve %s\n", NS_ConvertUTF16toUTF8(mDetails->mURLString).get());
+  RefPtr<nsStringBuffer> urlBuffer = nsCSSValue::BufferFromString(mDetails->mURLString);
+  mImageValue = new css::ImageValue(url, urlBuffer, mDetails->mReferrer,
+                                    mDetails->mPrincipal,
+                                    aPresContext->Document());
+  nsCSSValue value;
+  value.SetImageValue(mImageValue);
+  RefPtr<imgRequestProxy> req =
+    value.GetImageValue(aPresContext->Document());
+  if (!aPresContext->IsDynamic()) {
+    req = nsContentUtils::GetStaticRequest(req);
+  }
+  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(req);
+  mDetails = nullptr;
+}
+
+// --------------------
 // nsStyleImage
 //
 
@@ -1953,7 +2011,7 @@ nsStyleImage::SetNull()
 }
 
 void
-nsStyleImage::SetImageData(imgRequestProxy* aImage)
+nsStyleImage::SetImageData(nsStyleImageRequest* aImage)
 {
   MOZ_ASSERT(!mImageTracked,
              "Setting a new image without untracking the old one!");
@@ -1974,6 +2032,8 @@ void
 nsStyleImage::TrackImage(nsPresContext* aContext)
 {
   // Sanity
+  MOZ_ASSERT(NS_IsMainThread());
+  // XXX need an off main thread version of this
   MOZ_ASSERT(!mImageTracked, "Already tracking image!");
   MOZ_ASSERT(mType == eStyleImageType_Image,
              "Can't track image when there isn't one!");
@@ -1981,7 +2041,7 @@ nsStyleImage::TrackImage(nsPresContext* aContext)
   // Register the image with the document
   nsIDocument* doc = aContext->Document();
   if (doc)
-    doc->AddImage(mImage);
+    doc->AddImage(mImage->get());
 
   // Mark state
 #ifdef DEBUG
@@ -1993,6 +2053,8 @@ void
 nsStyleImage::UntrackImage(nsPresContext* aContext)
 {
   // Sanity
+  // XXX need an off main thread version of this
+  MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mImageTracked, "Image not tracked!");
   MOZ_ASSERT(mType == eStyleImageType_Image,
              "Can't untrack image when there isn't one!");
@@ -2000,7 +2062,7 @@ nsStyleImage::UntrackImage(nsPresContext* aContext)
   // Unregister the image with the document
   nsIDocument* doc = aContext->Document();
   if (doc)
-    doc->RemoveImage(mImage, nsIDocument::REQUEST_DISCARD);
+    doc->RemoveImage(mImage->get(), nsIDocument::REQUEST_DISCARD);
 
   // Mark state
 #ifdef DEBUG
@@ -2070,11 +2132,13 @@ bool
 nsStyleImage::ComputeActualCropRect(nsIntRect& aActualCropRect,
                                     bool* aIsEntireImage) const
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   if (mType != eStyleImageType_Image)
     return false;
 
   nsCOMPtr<imgIContainer> imageContainer;
-  mImage->GetImage(getter_AddRefs(imageContainer));
+  mImage->get()->GetImage(getter_AddRefs(imageContainer));
   if (!imageContainer)
     return false;
 
@@ -2102,14 +2166,18 @@ nsStyleImage::ComputeActualCropRect(nsIntRect& aActualCropRect,
 nsresult
 nsStyleImage::StartDecoding() const
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   if ((mType == eStyleImageType_Image) && mImage)
-    return mImage->StartDecoding();
+    return mImage->get()->StartDecoding();
   return NS_OK;
 }
 
 bool
 nsStyleImage::IsOpaque() const
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   if (!IsComplete())
     return false;
 
@@ -2122,7 +2190,7 @@ nsStyleImage::IsOpaque() const
   MOZ_ASSERT(mType == eStyleImageType_Image, "unexpected image type");
 
   nsCOMPtr<imgIContainer> imageContainer;
-  mImage->GetImage(getter_AddRefs(imageContainer));
+  mImage->get()->GetImage(getter_AddRefs(imageContainer));
   MOZ_ASSERT(imageContainer, "IsComplete() said image container is ready");
 
   // Check if the crop region of the image is opaque.
@@ -2144,6 +2212,8 @@ nsStyleImage::IsOpaque() const
 bool
 nsStyleImage::IsComplete() const
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   switch (mType) {
     case eStyleImageType_Null:
       return false;
@@ -2153,7 +2223,7 @@ nsStyleImage::IsComplete() const
     case eStyleImageType_Image:
     {
       uint32_t status = imgIRequest::STATUS_ERROR;
-      return NS_SUCCEEDED(mImage->GetImageStatus(&status)) &&
+      return NS_SUCCEEDED(mImage->get()->GetImageStatus(&status)) &&
              (status & imgIRequest::STATUS_SIZE_AVAILABLE) &&
              (status & imgIRequest::STATUS_FRAME_COMPLETE);
     }
@@ -2166,6 +2236,8 @@ nsStyleImage::IsComplete() const
 bool
 nsStyleImage::IsLoaded() const
 {
+  MOZ_ASSERT(NS_IsMainThread());
+
   switch (mType) {
     case eStyleImageType_Null:
       return false;
@@ -2175,7 +2247,7 @@ nsStyleImage::IsLoaded() const
     case eStyleImageType_Image:
     {
       uint32_t status = imgIRequest::STATUS_ERROR;
-      return NS_SUCCEEDED(mImage->GetImageStatus(&status)) &&
+      return NS_SUCCEEDED(mImage->get()->GetImageStatus(&status)) &&
              !(status & imgIRequest::STATUS_ERROR) &&
              (status & imgIRequest::STATUS_LOAD_COMPLETE);
     }
@@ -2202,7 +2274,7 @@ nsStyleImage::operator==(const nsStyleImage& aOther) const
     return false;
 
   if (mType == eStyleImageType_Image)
-    return EqualImages(mImage, aOther.mImage);
+    return EqualImages(GetImageRequest(), aOther.GetImageRequest());
 
   if (mType == eStyleImageType_Gradient)
     return *mGradient == *aOther.mGradient;
@@ -2449,7 +2521,7 @@ nsStyleImageLayers::Size::DependsOnPositioningAreaSize(const nsStyleImage& aImag
 
   if (type == eStyleImageType_Image) {
     nsCOMPtr<imgIContainer> imgContainer;
-    aImage.GetImageData()->GetImage(getter_AddRefs(imgContainer));
+    aImage.GetImageRequest()->GetImage(getter_AddRefs(imgContainer));
     if (imgContainer) {
       CSSIntSize imageSize;
       nsSize imageRatio;
@@ -3272,8 +3344,8 @@ nsStyleContentData::operator==(const nsStyleContentData& aOther) const
       return mContent.mImage == aOther.mContent.mImage;
     bool eq;
     nsCOMPtr<nsIURI> thisURI, otherURI;
-    mContent.mImage->GetURI(getter_AddRefs(thisURI));
-    aOther.mContent.mImage->GetURI(getter_AddRefs(otherURI));
+    mContent.mImage->get()->GetURI(getter_AddRefs(thisURI));
+    aOther.mContent.mImage->get()->GetURI(getter_AddRefs(otherURI));
     return thisURI == otherURI ||  // handles null==null
            (thisURI && otherURI &&
             NS_SUCCEEDED(thisURI->Equals(otherURI, &eq)) &&
@@ -3289,6 +3361,7 @@ void
 nsStyleContentData::TrackImage(nsPresContext* aContext)
 {
   // Sanity
+  MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(!mImageTracked, "Already tracking image!");
   MOZ_ASSERT(mType == eStyleContentType_Image,
              "Trying to do image tracking on non-image!");
@@ -3298,7 +3371,7 @@ nsStyleContentData::TrackImage(nsPresContext* aContext)
   // Register the image with the document
   nsIDocument* doc = aContext->Document();
   if (doc)
-    doc->AddImage(mContent.mImage);
+    doc->AddImage(mContent.mImage->get());
 
   // Mark state
 #ifdef DEBUG
@@ -3310,6 +3383,7 @@ void
 nsStyleContentData::UntrackImage(nsPresContext* aContext)
 {
   // Sanity
+  MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mImageTracked, "Image not tracked!");
   MOZ_ASSERT(mType == eStyleContentType_Image,
              "Trying to do image tracking on non-image!");
@@ -3319,7 +3393,7 @@ nsStyleContentData::UntrackImage(nsPresContext* aContext)
   // Unregister the image with the document
   nsIDocument* doc = aContext->Document();
   if (doc)
-    doc->RemoveImage(mContent.mImage, nsIDocument::REQUEST_DISCARD);
+    doc->RemoveImage(mContent.mImage->get(), nsIDocument::REQUEST_DISCARD);
 
   // Mark state
 #ifdef DEBUG

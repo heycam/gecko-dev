@@ -1120,8 +1120,9 @@ nsComputedDOMStyle::DoGetContent()
       case eStyleContentType_Image:
         {
           nsCOMPtr<nsIURI> uri;
-          if (data.mContent.mImage) {
-            data.mContent.mImage->GetURI(getter_AddRefs(uri));
+          imgRequestProxy* req = data.GetImageRequest();
+          if (req) {
+            req->GetURI(getter_AddRefs(uri));
           }
           val->SetURI(uri);
         }
@@ -2098,7 +2099,7 @@ nsComputedDOMStyle::SetValueToStyleImage(const nsStyleImage& aStyleImage,
   switch (aStyleImage.GetType()) {
     case eStyleImageType_Image:
     {
-      imgIRequest *req = aStyleImage.GetImageData();
+      imgIRequest* req = aStyleImage.GetImageRequest();
       nsCOMPtr<nsIURI> uri;
       req->GetURI(getter_AddRefs(uri));
 
@@ -3440,13 +3441,12 @@ nsComputedDOMStyle::DoGetListStyleImage()
 
   const nsStyleList* list = StyleList();
 
-  if (!list->GetListStyleImage()) {
+  imgRequestProxy* req = list->GetListStyleImageRequest();
+  if (!req) {
     val->SetIdent(eCSSKeyword_none);
   } else {
     nsCOMPtr<nsIURI> uri;
-    if (list->GetListStyleImage()) {
-      list->GetListStyleImage()->GetURI(getter_AddRefs(uri));
-    }
+    req->GetURI(getter_AddRefs(uri));
     val->SetURI(uri);
   }
 

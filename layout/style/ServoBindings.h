@@ -29,6 +29,7 @@ struct nsFont;
 namespace mozilla {
   class FontFamilyList;
   enum FontFamilyType : uint32_t;
+  struct PostRestyleTask;
   namespace dom { class Element; }
 }
 using mozilla::FontFamilyList;
@@ -44,19 +45,21 @@ struct RawServoStyleSet;
 class nsHTMLCSSStyleSheet;
 struct nsStyleList;
 struct nsStyleImage;
+class nsStyleImageRequest;
 struct nsStyleGradientStop;
 class nsStyleGradient;
 class nsStyleCoord;
+struct nsStyleBackground;
 struct nsStyleDisplay;
 struct ServoDeclarationBlock;
 
 #define NS_DECL_THREADSAFE_FFI_REFCOUNTING(class_, name_)                     \
-  static_assert(class_::HasThreadSafeRefCnt::value,                           \
-                "NS_DECL_THREADSAFE_FFI_REFCOUNTING can only be used with "   \
-                "classes that have thread-safe refcounting");                 \
   void Gecko_AddRef##name_##ArbitraryThread(class_* aPtr);                    \
   void Gecko_Release##name_##ArbitraryThread(class_* aPtr);
 #define NS_IMPL_THREADSAFE_FFI_REFCOUNTING(class_, name_)                     \
+  static_assert(class_::HasThreadSafeRefCnt::value,                           \
+                "NS_DECL_THREADSAFE_FFI_REFCOUNTING can only be used with "   \
+                "classes that have thread-safe refcounting");                 \
   void Gecko_AddRef##name_##ArbitraryThread(class_* aPtr)                     \
   { NS_ADDREF(aPtr); }                                                        \
   void Gecko_Release##name_##ArbitraryThread(class_* aPtr)                    \
@@ -132,6 +135,11 @@ const uint16_t* Gecko_GetAtomAsUTF16(nsIAtom* aAtom, uint32_t* aLength);
 bool Gecko_AtomEqualsUTF8(nsIAtom* aAtom, const char* aString, uint32_t aLength);
 bool Gecko_AtomEqualsUTF8IgnoreCase(nsIAtom* aAtom, const char* aString, uint32_t aLength);
 
+// Object refcounting.
+NS_DECL_HOLDER_FFI_REFCOUNTING(nsIPrincipal, Principal)
+NS_DECL_HOLDER_FFI_REFCOUNTING(nsIURI, URI)
+NS_DECL_THREADSAFE_FFI_REFCOUNTING(nsStyleImageRequest, StyleImageRequest)
+
 // Font style
 void Gecko_FontFamilyList_Clear(FontFamilyList* aList);
 void Gecko_FontFamilyList_AppendNamed(FontFamilyList* aList, nsIAtom* aName);
@@ -146,6 +154,12 @@ void Gecko_CopyListStyleTypeFrom(nsStyleList* dst, const nsStyleList* src);
 // TODO: support url() values (and maybe element() too?).
 void Gecko_SetNullImageValue(nsStyleImage* image);
 void Gecko_SetGradientImageValue(nsStyleImage* image, nsStyleGradient* gradient);
+nsStyleImageRequest* Gecko_SetURLImageValue(
+    nsStyleImage* image,
+    const uint8_t* string_bytes, uint32_t string_length,
+    ThreadSafeURIHolder* base_uri,
+    ThreadSafeURIHolder* referrer,
+    ThreadSafePrincipalHolder* principal);
 void Gecko_CopyImageValueFrom(nsStyleImage* image, const nsStyleImage* other);
 
 nsStyleGradient* Gecko_CreateGradient(uint8_t shape,
@@ -159,10 +173,6 @@ void Gecko_SetGradientStop(nsStyleGradient* gradient,
                            const nsStyleCoord* location,
                            nscolor color,
                            bool is_interpolation_hint);
-
-// Object refcounting.
-NS_DECL_HOLDER_FFI_REFCOUNTING(nsIPrincipal, Principal)
-NS_DECL_HOLDER_FFI_REFCOUNTING(nsIURI, URI)
 
 // Display style.
 void Gecko_SetMozBinding(nsStyleDisplay* style_struct,
@@ -179,6 +189,7 @@ void Gecko_CopyMozBindingFrom(nsStyleDisplay* des, const nsStyleDisplay* src);
 RawServoStyleSheet* Servo_StylesheetFromUTF8Bytes(
     const uint8_t* bytes, uint32_t length,
     mozilla::css::SheetParsingMode parsing_mode,
+    const uint8_t* base_string, uint32_t base_length,
     ThreadSafeURIHolder* base,
     ThreadSafeURIHolder* referrer,
     ThreadSafePrincipalHolder* principal);
@@ -221,8 +232,14 @@ void Servo_ReleaseComputedValues(ServoComputedValues*);
 void Servo_Initialize();
 
 // Restyle the given document or subtree.
-void Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set);
-void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set);
+void Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set,
+                           nsTArray<mozilla::PostRestyleTask>* tasks);
+void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set,
+                          nsTArray<mozilla::PostRestyleTask>* tasks);
+void Gecko_AppendPostRestyleTask_ResolveImage(
+    nsTArray<mozilla::PostRestyleTask>* tasks, nsStyleImageRequest* image);
+void Gecko_AppendPostRestyleTask_TrackBackgroundImages(
+    nsTArray<mozilla::PostRestyleTask>* tasks, nsStyleBackground* background);
 
 uint32_t Servo_StyleWorkerThreadCount();
 

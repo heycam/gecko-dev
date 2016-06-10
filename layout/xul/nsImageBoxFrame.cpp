@@ -252,7 +252,7 @@ nsImageBoxFrame::UpdateImage()
     if (!(appearance && nsBox::gTheme &&
           nsBox::gTheme->ThemeSupportsWidget(nullptr, this, appearance))) {
       // get the list-style-image
-      imgRequestProxy *styleRequest = StyleList()->GetListStyleImage();
+      imgRequestProxy* styleRequest = StyleList()->GetListStyleImageRequest();
       if (styleRequest) {
         styleRequest->Clone(mListener, getter_AddRefs(mImageRequest));
       }
@@ -521,8 +521,9 @@ nsImageBoxFrame::DidSetStyleContext(nsStyleContext* aOldStyleContext)
   nsCOMPtr<nsIURI> oldURI, newURI;
   if (mImageRequest)
     mImageRequest->GetURI(getter_AddRefs(oldURI));
-  if (myList->GetListStyleImage())
-    myList->GetListStyleImage()->GetURI(getter_AddRefs(newURI));
+  imgRequestProxy* req = myList->GetListStyleImageRequest();
+  if (req)
+    req->GetURI(getter_AddRefs(newURI));
   bool equal;
   if (newURI == oldURI ||   // handles null==null
       (newURI && oldURI &&

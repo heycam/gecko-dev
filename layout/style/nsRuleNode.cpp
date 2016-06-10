@@ -100,19 +100,24 @@ nsConditionalResetStyleData::GetConditionalStyleData(nsStyleStructID aSID,
 static void
 SetImageData(nsStyleImage& aImage, imgRequestProxy* aRequest)
 {
-  aImage.SetImageData(aRequest);
+  RefPtr<nsStyleImageRequest> req = new nsStyleImageRequest(aRequest);
+  aImage.SetImageData(req);
 }
 
 static void
 SetImageData(nsStyleList& aList, imgRequestProxy* aRequest)
 {
-  aList.SetListStyleImage(aRequest);
+  RefPtr<nsStyleImageRequest> req = new nsStyleImageRequest(aRequest);
+  bool needsLocking = false;
+  aList.SetListStyleImage(req, needsLocking);
+  MOZ_ASSERT(!needsLocking);
 }
 
 static void
 SetImageData(nsStyleContentData& aData, imgRequestProxy* aRequest)
 {
-  aData.SetImage(aRequest);
+  RefPtr<nsStyleImageRequest> req = new nsStyleImageRequest(aRequest);
+  aData.SetImage(req);
 }
 
 template<typename T>
@@ -7935,12 +7940,16 @@ nsRuleNode::ComputeListData(void* aStartStruct,
   }
   else if (eCSSUnit_None == imageValue->GetUnit() ||
            eCSSUnit_Initial == imageValue->GetUnit()) {
-    list->SetListStyleImage(nullptr);
+    bool needsLocking = false;
+    list->SetListStyleImage(nullptr, needsLocking);
+    MOZ_ASSERT(!needsLocking);
   }
   else if (eCSSUnit_Inherit == imageValue->GetUnit() ||
            eCSSUnit_Unset == imageValue->GetUnit()) {
     conditions.SetUncacheable();
-    list->SetListStyleImage(parentList->GetListStyleImage());
+    bool needsLocking = false;
+    list->SetListStyleImage(parentList->GetListStyleImage(), needsLocking);
+    MOZ_ASSERT(!needsLocking);
   }
 
   // list-style-position: enum, inherit, initial

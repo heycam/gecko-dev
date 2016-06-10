@@ -15,6 +15,7 @@
 #include "mozilla/ArenaObjectID.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/CSSVariableValues.h"
+#include "mozilla/ServoBindings.h"
 #include "mozilla/SheetType.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/StyleStructContext.h"
@@ -238,6 +239,60 @@ private:
   nsStyleGradient& operator=(const nsStyleGradient& aOther) = delete;
 };
 
+/**
+ * A wrapper for an imgRequestProxy that can be created off the main
+ * thread, but which can be assigned with enough data to get the underlying
+ * imgRequestProxy on the main thread later.
+ */
+class nsStyleImageRequest
+{
+public:
+  // Must be called from the main thread.
+  nsStyleImageRequest(imgRequestProxy* aRequestProxy);
+
+  // Can be called from any thread, but Resolve() must be called later
+  // on the main thread before get() can be used.
+  nsStyleImageRequest(const nsCSubstring& aURLString,
+                      already_AddRefed<mozilla::PtrHolder<nsIURI>> aBaseURI,
+                      already_AddRefed<mozilla::PtrHolder<nsIURI>> aReferrer,
+                      already_AddRefed<mozilla::PtrHolder<nsIPrincipal>> aOriginPrincipal);
+
+  void Resolve(nsPresContext* aPresContext);
+
+  const imgRequestProxy* get() const {
+    MOZ_ASSERT(mRequestProxy, "Resolve() must be called first");
+    return mRequestProxy.get();
+  }
+  imgRequestProxy* get() {
+    MOZ_ASSERT(mRequestProxy, "Resolve() must be called first");
+    return mRequestProxy.get();
+  }
+
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(nsStyleImageRequest);
+
+private:
+  nsStyleImageRequest& operator=(const nsStyleImageRequest& aOther) = delete;
+
+  ~nsStyleImageRequest() {}
+
+  struct Details {
+    Details(const nsCSubstring& aURLString,
+            already_AddRefed<mozilla::PtrHolder<nsIURI>> aBaseURI,
+            already_AddRefed<mozilla::PtrHolder<nsIURI>> aReferrer,
+            already_AddRefed<mozilla::PtrHolder<nsIPrincipal>> aPrincipal)
+      : mURLString(aURLString), mBaseURI(mozilla::Move(aBaseURI)), mReferrer(mozilla::Move(aReferrer))
+      , mPrincipal(mozilla::Move(aPrincipal)) {}
+    NS_ConvertUTF8toUTF16 mURLString;
+    mozilla::PtrHandle<nsIURI> mBaseURI;
+    mozilla::PtrHandle<nsIURI> mReferrer;
+    mozilla::PtrHandle<nsIPrincipal> mPrincipal;
+  };
+
+  nsMainThreadPtrHandle<imgRequestProxy> mRequestProxy;
+  nsAutoPtr<Details> mDetails;
+  RefPtr<mozilla::css::ImageValue> mImageValue;
+};
+
 enum nsStyleImageType {
   eStyleImageType_Null,
   eStyleImageType_Image,
@@ -263,7 +318,7 @@ struct nsStyleImage
   nsStyleImage& operator=(const nsStyleImage& aOther);
 
   void SetNull();
-  void SetImageData(imgRequestProxy* aImage);
+  void SetImageData(nsStyleImageRequest* aImage);
   void TrackImage(nsPresContext* aContext);
   void UntrackImage(nsPresContext* aContext);
   void SetGradientData(nsStyleGradient* aGradient);
@@ -273,11 +328,15 @@ struct nsStyleImage
   nsStyleImageType GetType() const {
     return mType;
   }
-  imgRequestProxy* GetImageData() const {
+  nsStyleImageRequest* GetImageData() const {
     MOZ_ASSERT(mType == eStyleImageType_Image, "Data is not an image!");
     MOZ_ASSERT(mImageTracked,
                "Should be tracking any image we're going to use!");
     return mImage;
+  }
+  imgRequestProxy* GetImageRequest() const {
+    nsStyleImageRequest* req = GetImageData();
+    return req ? req->get() : nullptr;
   }
   nsStyleGradient* GetGradientData() const {
     NS_ASSERTION(mType == eStyleImageType_Gradient, "Data is not a gradient!");
@@ -350,7 +409,7 @@ struct nsStyleImage
   {
     return GetType() == eStyleImageType_Image &&
            aOther.GetType() == eStyleImageType_Image &&
-           GetImageData() == aOther.GetImageData();
+           GetImageRequest() == aOther.GetImageRequest();
   }
 
   // These methods are used for the caller to caches the sub images created
@@ -366,7 +425,7 @@ private:
 
   nsStyleImageType mType;
   union {
-    imgRequestProxy* mImage;
+    nsStyleImageRequest* mImage;
     nsStyleGradient* mGradient;
     char16_t* mElementId;
   };
@@ -1230,8 +1289,9 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleBorder
 
   imgIRequest* GetBorderImageRequest() const
   {
+    MOZ_ASSERT(NS_IsMainThread());
     if (mBorderImageSource.GetType() == eStyleImageType_Image) {
-      return mBorderImageSource.GetImageData();
+      return mBorderImageSource.GetImageRequest();
     }
     return nullptr;
   }
@@ -1434,14 +1494,23 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleList
     sNoneQuotes = nullptr;
   }
 
-  imgRequestProxy* GetListStyleImage() const { return mListStyleImage; }
-  void SetListStyleImage(imgRequestProxy* aReq)
+  nsStyleImageRequest* GetListStyleImage() const { return mListStyleImage; }
+  imgRequestProxy* GetListStyleImageRequest() const {
+    return mListStyleImage ? mListStyleImage->get() : nullptr;
+  }
+  void SetListStyleImage(nsStyleImageRequest* aReq, bool& aNeedsLocking)
   {
-    if (mListStyleImage)
-      mListStyleImage->UnlockImage();
+    if (NS_IsMainThread()) {
+      if (mListStyleImage)
+        mListStyleImage->get()->UnlockImage();
+      mListStyleImage = aReq;
+      if (mListStyleImage)
+        mListStyleImage->get()->LockImage();
+      aNeedsLocking = false;
+      return;
+    }
+
     mListStyleImage = aReq;
-    if (mListStyleImage)
-      mListStyleImage->LockImage();
   }
 
   void GetListStyleType(nsSubstring& aType) const { mCounterStyle->GetStyleName(aType); }
@@ -1472,7 +1541,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleList
   uint8_t   mListStylePosition;         // [inherited]
 private:
   RefPtr<mozilla::CounterStyle> mCounterStyle; // [inherited]
-  RefPtr<imgRequestProxy> mListStyleImage; // [inherited]
+  RefPtr<nsStyleImageRequest> mListStyleImage; // [inherited]
   RefPtr<nsStyleQuoteValues> mQuotes;   // [inherited]
   nsStyleList& operator=(const nsStyleList& aOther) = delete;
 public:
@@ -2820,7 +2889,7 @@ struct nsStyleContentData
   nsStyleContentType  mType;
   union {
     char16_t *mString;
-    imgRequestProxy *mImage;
+    nsStyleImageRequest* mImage;
     nsCSSValue::Array* mCounters;
   } mContent;
 #ifdef DEBUG
@@ -2845,12 +2914,18 @@ struct nsStyleContentData
   void TrackImage(nsPresContext* aContext);
   void UntrackImage(nsPresContext* aContext);
 
-  void SetImage(imgRequestProxy* aRequest)
+  void SetImage(nsStyleImageRequest* aRequest)
   {
     MOZ_ASSERT(!mImageTracked,
                "Setting a new image without untracking the old one!");
     MOZ_ASSERT(mType == eStyleContentType_Image, "Wrong type!");
     NS_IF_ADDREF(mContent.mImage = aRequest);
+  }
+
+  imgRequestProxy* GetImageRequest() const
+  {
+    MOZ_ASSERT(mType == eStyleContentType_Image, "Wrong type!");
+    return mContent.mImage ? mContent.mImage->get() : nullptr;
   }
 private:
   nsStyleContentData(const nsStyleContentData&); // not to be implemented
@@ -3689,6 +3764,23 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleEffects
   uint8_t mClipFlags;                  // [reset] see nsStyleConsts.h
   uint8_t mMixBlendMode;               // [reset] see nsStyleConsts.h
 };
+
+namespace mozilla {
+
+enum class PostRestyleTaskType
+{
+  ResolveImage,
+  TrackBackgroundImages,
+};
+
+struct PostRestyleTask
+{
+  PostRestyleTaskType mType;
+  RefPtr<nsStyleImageRequest> mImage;
+  nsStyleBackground* mBackground;
+};
+
+} // namespace moziilla
 
 #define STATIC_ASSERT_TYPE_LAYOUTS_MATCH(T1, T2)                               \
   static_assert(sizeof(T1) == sizeof(T2),                                      \

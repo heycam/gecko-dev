@@ -2114,7 +2114,7 @@ nsTreeBodyFrame::GetImage(int32_t aRowIndex, nsTreeColumn* aCol, bool aUseContex
   else {
     // Obtain the URL from the style context.
     aAllowImageRegions = true;
-    styleRequest = aStyleContext->StyleList()->GetListStyleImage();
+    styleRequest = aStyleContext->StyleList()->GetListStyleImageRequest();
     if (!styleRequest)
       return NS_OK;
     nsCOMPtr<nsIURI> uri;

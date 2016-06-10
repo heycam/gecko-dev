@@ -2754,7 +2754,7 @@ nsDisplayBackgroundImage::ShouldCreateOwnLayer(nsDisplayListBuilder* aBuilder,
     const nsStyleImageLayers::Layer &layer = mBackgroundStyle->mImage.mLayers[mLayer];
     const nsStyleImage* image = &layer.mImage;
     if (image->GetType() == eStyleImageType_Image) {
-      imgIRequest* imgreq = image->GetImageData();
+      imgIRequest* imgreq = image->GetImageRequest();
       nsCOMPtr<imgIContainer> image;
       if (NS_SUCCEEDED(imgreq->GetImage(getter_AddRefs(image))) && image) {
         bool animated = false;

@@ -101,7 +101,7 @@ nsBulletFrame::DidSetStyleContext(nsStyleContext* aOldStyleContext)
 {
   nsFrame::DidSetStyleContext(aOldStyleContext);
 
-  imgRequestProxy *newRequest = StyleList()->GetListStyleImage();
+  imgRequestProxy* newRequest = StyleList()->GetListStyleImageRequest();
 
   if (newRequest) {
 

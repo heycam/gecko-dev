@@ -1677,7 +1677,7 @@ nsCSSFrameConstructor::CreateGeneratedContent(nsFrameConstructorState& aState,
 
     nsCOMPtr<nsIContent> content;
     NS_NewGenConImageContent(getter_AddRefs(content), nodeInfo.forget(),
-                             data.mContent.mImage);
+                             data.GetImageRequest());
     return content.forget();
   }
 

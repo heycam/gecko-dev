@@ -278,6 +278,9 @@ ImageLoader::LoadImage(nsIURI* aURI, nsIPrincipal* aOriginPrincipal,
     return;
   }
 
+//   nsCString uri;
+//   aURI->GetSpec(uri);
+//   printf("ImageLoader::LoadImage %s\n", uri.get());
   aImage->mRequests.Put(nullptr, request);
   aImage->mRequests.Put(mDocument, clonedRequest);
 
@@ -449,6 +452,14 @@ ImageLoader::OnFrameComplete(imgIRequest* aRequest)
     return NS_OK;
   }
 
+  nsCOMPtr<nsIURI> uri;
+  aRequest->GetURI(getter_AddRefs(uri));
+  nsCString url;
+  if (uri) {
+    uri->GetSpec(url);
+  }
+
+//   printf("OnFrameComplete: %s\n", url.get());
   FrameSet* frameSet = nullptr;
   if (!mRequestToFrameMap.Get(aRequest, &frameSet)) {
     return NS_OK;

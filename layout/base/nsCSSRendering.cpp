@@ -4854,7 +4854,7 @@ ShouldTreatAsCompleteDueToSyncDecode(const nsStyleImage* aImage,
   }
 
   uint32_t status = 0;
-  if (NS_FAILED(aImage->GetImageData()->GetImageStatus(&status))) {
+  if (NS_FAILED(aImage->GetImageRequest()->GetImageStatus(&status))) {
     return false;
   }
 
@@ -4862,7 +4862,7 @@ ShouldTreatAsCompleteDueToSyncDecode(const nsStyleImage* aImage,
     // The image is "complete" since it's a corrupt image. If we created an
     // imgIContainer at all, return true.
     nsCOMPtr<imgIContainer> image;
-    aImage->GetImageData()->GetImage(getter_AddRefs(image));
+    aImage->GetImageRequest()->GetImage(getter_AddRefs(image));
     return bool(image);
   }
 
@@ -4903,7 +4903,7 @@ nsImageRenderer::PrepareImage()
     {
       nsCOMPtr<imgIContainer> srcImage;
       DebugOnly<nsresult> rv =
-        mImage->GetImageData()->GetImage(getter_AddRefs(srcImage));
+        mImage->GetImageRequest()->GetImage(getter_AddRefs(srcImage));
       MOZ_ASSERT(NS_SUCCEEDED(rv) && srcImage,
                  "If GetImage() is failing, mImage->IsComplete() "
                  "should have returned false");

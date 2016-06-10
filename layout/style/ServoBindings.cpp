@@ -9,6 +9,7 @@
 #include "gfxFontFamilyList.h"
 #include "nsAttrValueInlines.h"
 #include "nsCSSRuleProcessor.h"
+#include "nsCSSValue.h"
 #include "nsContentUtils.h"
 #include "nsDOMTokenList.h"
 #include "nsIDOMNode.h"
@@ -351,6 +352,7 @@ Gecko_CopyListStyleTypeFrom(nsStyleList* dst, const nsStyleList* src)
 
 NS_IMPL_HOLDER_FFI_REFCOUNTING(nsIPrincipal, Principal)
 NS_IMPL_HOLDER_FFI_REFCOUNTING(nsIURI, URI)
+NS_IMPL_THREADSAFE_FFI_REFCOUNTING(nsStyleImageRequest, StyleImageRequest)
 
 void
 Gecko_SetMozBinding(nsStyleDisplay* aDisplay,
@@ -395,6 +397,28 @@ Gecko_SetGradientImageValue(nsStyleImage* aImage, nsStyleGradient* aGradient)
 {
   MOZ_ASSERT(aImage);
   aImage->SetGradientData(aGradient);
+}
+
+nsStyleImageRequest*
+Gecko_SetURLImageValue(nsStyleImage* aImage,
+                       const uint8_t* aURLString, uint32_t aURLStringLength,
+                       ThreadSafeURIHolder* aBaseURI,
+                       ThreadSafeURIHolder* aReferrer,
+                       ThreadSafePrincipalHolder* aPrincipal)
+{
+  MOZ_ASSERT(aImage);
+  MOZ_ASSERT(aURLString);
+  MOZ_ASSERT(aBaseURI);
+  MOZ_ASSERT(aReferrer);
+  MOZ_ASSERT(aPrincipal);
+
+  nsDependentCSubstring urlString(reinterpret_cast<const char*>(aURLString),
+                                  aURLStringLength);
+  nsStyleImageRequest* req =
+    new nsStyleImageRequest(urlString, do_AddRef(aBaseURI),
+                            do_AddRef(aReferrer), do_AddRef(aPrincipal));
+  aImage->SetImageData(req);
+  return req;
 }
 
 void
@@ -454,6 +478,24 @@ Gecko_SetGradientStop(nsStyleGradient* aGradient,
   aGradient->mStops[aIndex].mIsInterpolationHint = aIsInterpolationHint;
 }
 
+void
+Gecko_AppendPostRestyleTask_ResolveImage(nsTArray<PostRestyleTask>* tasks,
+                                         nsStyleImageRequest* image)
+{
+  PostRestyleTask* task = tasks->AppendElement();
+  task->mType = PostRestyleTaskType::ResolveImage;
+  task->mImage = image;
+}
+
+void Gecko_AppendPostRestyleTask_TrackBackgroundImages(
+    nsTArray<mozilla::PostRestyleTask>* tasks,
+    nsStyleBackground* background)
+{
+  PostRestyleTask* task = tasks->AppendElement();
+  task->mType = PostRestyleTaskType::TrackBackgroundImages;
+  task->mBackground = background;
+}
+
 #define STYLE_STRUCT(name, checkdata_cb)                                      \
                                                                               \
 void                                                                          \
@@ -490,6 +532,7 @@ Servo_DropNodeData(ServoNodeData* data)
 RawServoStyleSheet*
 Servo_StylesheetFromUTF8Bytes(const uint8_t* bytes, uint32_t length,
                               mozilla::css::SheetParsingMode mode,
+                              const uint8_t* base_string, uint32_t base_length,
                               ThreadSafeURIHolder* base,
                               ThreadSafeURIHolder* referrer,
                               ThreadSafePrincipalHolder* principal)
@@ -646,13 +689,13 @@ Servo_Initialize()
 }
 
 void
-Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set)
+Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set, nsTArray<PostRestyleTask>* tasks)
 {
   MOZ_CRASH("stylo: shouldn't be calling Servo_RestyleDocument in a "
             "non-MOZ_STYLO build");
 }
 
-void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set)
+void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set, nsTArray<PostRestyleTask>* tasks)
 {
   MOZ_CRASH("stylo: shouldn't be calling Servo_RestyleSubtree in a "
             "non-MOZ_STYLO build");

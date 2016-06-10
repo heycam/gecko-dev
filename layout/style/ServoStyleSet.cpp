@@ -11,6 +11,7 @@
 #include "nsIDocumentInlines.h"
 #include "nsStyleContext.h"
 #include "nsStyleSet.h"
+#include "nsStyleStruct.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -70,13 +71,37 @@ ServoStyleSet::EndUpdate()
   return NS_OK;
 }
 
+static void
+ProcessPostRestyleTasks(nsPresContext* aPresContext, nsTArray<PostRestyleTask>& aTasks)
+{
+//   printf("%d tasks:\n", (int)aTasks.Length());
+  for (PostRestyleTask& task : aTasks) {
+//     printf("  (type: %d, ptr: %p)\n", task.mType, task.mImage.get());
+    switch (task.mType) {
+      case PostRestyleTaskType::ResolveImage:
+        task.mImage->Resolve(aPresContext);
+        break;
+      case PostRestyleTaskType::TrackBackgroundImages:
+        task.mBackground->mImage.TrackImages(aPresContext);
+        break;
+      default:
+        MOZ_CRASH("unhandled PostRestyleTaskType");
+    }
+  }
+}
+
 void
 ServoStyleSet::ForceRestyle(nsPresContext* aPresContext)
 {
   PRTime t1 = PR_Now();
-  Servo_RestyleDocument(aPresContext->Document(), mRawSet.get());
+  nsTArray<PostRestyleTask> tasks;
+  Servo_RestyleDocument(aPresContext->Document(), mRawSet.get(), &tasks);
+  ProcessPostRestyleTasks(mPresContext, tasks);
   PRTime t2 = PR_Now();
   mRestyleTime = t2 - t1;
+  nsCString url;
+  aPresContext->Document()->GetDocumentURI()->GetSpec(url);
+  printf("restyle time for %s: %d\n", url.get(), (int) mRestyleTime);
 }
 
 already_AddRefed<nsStyleContext>
@@ -110,9 +135,14 @@ ServoStyleSet::GetContext(already_AddRefed<ServoComputedValues> aComputedValues,
   // duplicate something that servo already does?
   bool skipFixup = false;
 
-  return NS_NewStyleContext(aParentContext, mPresContext, aPseudoTag,
+  RefPtr<ServoComputedValues> scv = aComputedValues;
+//   printf("GetContext aComputedValues=%p\n", scv.get());
+  RefPtr<nsStyleContext> ret =
+             NS_NewStyleContext(aParentContext, mPresContext, aPseudoTag,
                             aPseudoType,
-                            Move(aComputedValues), skipFixup);
+                            /*Move(aComputedValues)*/scv.forget(), skipFixup);
+//   printf("  ret=%p\n", ret.get());
+  return ret.forget();
 }
 
 already_AddRefed<nsStyleContext>
@@ -391,5 +421,7 @@ ServoStyleSet::HasStateDependentStyle(dom::Element* aElement,
 void
 ServoStyleSet::RestyleSubtree(nsINode* aNode)
 {
-  Servo_RestyleSubtree(aNode, mRawSet.get());
+  nsTArray<PostRestyleTask> tasks;
+  Servo_RestyleSubtree(aNode, mRawSet.get(), &tasks);
+  ProcessPostRestyleTasks(mPresContext, tasks);
 }
