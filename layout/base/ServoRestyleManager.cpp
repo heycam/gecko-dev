@@ -216,7 +216,8 @@ ServoRestyleManager::AttributeChanged(Element* aElement,
 nsresult
 ServoRestyleManager::ReparentStyleContext(nsIFrame* aFrame)
 {
-  MOZ_CRASH("stylo: ServoRestyleManager::ReparentStyleContext not implemented");
+  NS_ERROR("stylo: ServoRestyleManager::ReparentStyleContext not implemented");
+  return NS_OK;
 }
 
 bool
