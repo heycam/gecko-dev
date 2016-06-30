@@ -189,7 +189,9 @@ ServoStyleSet::ResolveAnonymousBoxStyle(nsIAtom* aPseudoTag,
   RefPtr<ServoComputedValues> computedValues =
     dont_AddRef(Servo_GetComputedValuesForAnonymousBox(parentStyle, aPseudoTag,
                                                        mRawSet.get()));
-  MOZ_ASSERT(computedValues);
+  if (!computedValues) {
+    computedValues = parentStyle;
+  }
 
   return NS_NewStyleContext(aParentContext, mPresContext, aPseudoTag,
                             CSSPseudoElementType::AnonBox,
