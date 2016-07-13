@@ -75,7 +75,11 @@ void
 ServoStyleSet::ForceRestyle(nsPresContext* aPresContext)
 {
   PRTime t1 = PR_Now();
-  Servo_RestyleDocument(aPresContext->Document(), mRawSet.get());
+  nsIDocument* doc = aPresContext->Document();
+  Element* root = doc->GetRootElement();
+  if (root) {
+    RestyleSubtree(root, /* aForce = */ true);
+  }
   PRTime t2 = PR_Now();
   mRestyleTime = t2 - t1;
 }
