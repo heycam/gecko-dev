@@ -66,12 +66,19 @@ public:
                         int32_t aModType,
                         const nsAttrValue* aOldValue);
   nsresult ReparentStyleContext(nsIFrame* aFrame);
-  bool HasPendingRestyles();
+
+  bool HasPendingRestyles() {
+    if (MOZ_UNLIKELY(IsDisconnected())) {
+      return false;
+    }
+    return PresContext()->PresShell()->GetDocument()->HasDirtyDescendantsForServo();
+  }
 
 protected:
   ~ServoRestyleManager() {}
 
 private:
+
   /**
    * Traverses a tree of content that Servo has just restyled, recreating style
    * contexts for their frames with the new style data.

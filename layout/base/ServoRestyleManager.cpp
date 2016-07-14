@@ -48,10 +48,10 @@ ServoRestyleManager::PostRestyleEvent(Element* aElement,
     return;
   }
 
-  if (aRestyleHint == 0 && !aMinChangeHint) {
-    // Nothing to do here
-    return;
-  }
+  // if (aRestyleHint == 0 && !aMinChangeHint) {
+  //   // Nothing to do here
+  //   return;
+  // }
 
   nsIPresShell* presShell = PresContext()->PresShell();
   if (!ObservingRefreshDriver()) {
@@ -69,7 +69,6 @@ ServoRestyleManager::PostRestyleEvent(Element* aElement,
       break;
     cur->SetHasDirtyDescendantsForServo();
   }
-
   presShell->GetDocument()->SetNeedStyleFlush();
 }
 
@@ -140,6 +139,10 @@ ServoRestyleManager::RecreateStyleContexts(nsIContent* aContent,
 void
 ServoRestyleManager::ProcessPendingRestyles()
 {
+  if (!HasPendingRestyles()) {
+    return;
+  }
+
   ServoStyleSet* styleSet = StyleSet();
 
   if (!styleSet->InitialRestyleDone()) {
@@ -156,6 +159,14 @@ ServoRestyleManager::ProcessPendingRestyles()
     RecreateStyleContexts(root, nullptr, styleSet);
   }
 
+  // NB: we restyle from the root element, but the document also gets the
+  // HAS_DIRTY_DESCENDANTS flag as part of the loop on PostRestyleEvent, and we
+  // use that to check we have pending restyles.
+  //
+  // Thus, they need to get cleared here.
+  MOZ_ASSERT(!doc->IsDirtyForServo());
+  doc->UnsetFlags(NODE_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
+
   IncrementRestyleGeneration();
 }
 
@@ -163,7 +174,14 @@ void
 ServoRestyleManager::RestyleForInsertOrChange(Element* aContainer,
                                               nsIContent* aChild)
 {
-  NS_ERROR("stylo: ServoRestyleManager::RestyleForInsertOrChange not implemented");
+  NS_ASSERTION(!aChild->IsRootOfAnonymousSubtree(),
+               "anonymous nodes should not be in child lists");
+
+  uint32_t selectorFlags =
+    aContainer ? (aContainer->GetFlags() & NODE_ALL_SELECTOR_FLAGS) : 0;
+  if (selectorFlags == 0)
+    return;
+
 }
 
 void
@@ -223,13 +241,6 @@ ServoRestyleManager::ReparentStyleContext(nsIFrame* aFrame)
 {
   NS_ERROR("stylo: ServoRestyleManager::ReparentStyleContext not implemented");
   return NS_OK;
-}
-
-bool
-ServoRestyleManager::HasPendingRestyles()
-{
-  NS_ERROR("stylo: ServoRestyleManager::HasPendingRestyles not implemented");
-  return false;
 }
 
 } // namespace mozilla
