@@ -142,6 +142,12 @@ ServoRestyleManager::ProcessPendingRestyles()
 {
   ServoStyleSet* styleSet = StyleSet();
 
+  if (!styleSet->InitialRestyleDone()) {
+    // If something caused us to restyle, and we haven't done the initial
+    // full document restyle, do nothing.
+    return;
+  }
+
   nsIDocument* doc = PresContext()->Document();
   Element* root = doc->GetRootElement();
 

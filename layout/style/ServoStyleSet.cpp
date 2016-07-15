@@ -21,6 +21,7 @@ ServoStyleSet::ServoStyleSet()
   , mRawSet(Servo_InitStyleSet())
   , mBatching(0)
   , mRestyleTime(0)
+  , mInitialRestyleDone(false)
 {
 }
 
@@ -79,6 +80,7 @@ ServoStyleSet::ForceRestyle(nsPresContext* aPresContext)
   Element* root = doc->GetRootElement();
   if (root) {
     RestyleSubtree(root, /* aForce = */ true);
+    mInitialRestyleDone = true;
   }
   PRTime t2 = PR_Now();
   mRestyleTime = t2 - t1;
