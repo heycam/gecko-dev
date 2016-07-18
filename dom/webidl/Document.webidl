@@ -451,4 +451,14 @@ partial interface Document {
   [ChromeOnly] readonly attribute unsigned long long restyleTime;
   [ChromeOnly] void updateRestyleTime();
   [ChromeOnly] void setWantsStylo(boolean wants);
+  [ChromeOnly] void setDefaultWantsStylo(boolean wants);
+};
+
+dictionary PropAndValue {
+  required DOMString property;
+  required DOMString value;
+};
+
+partial interface Document {
+  sequence<PropAndValue> gatherStyles();
 };

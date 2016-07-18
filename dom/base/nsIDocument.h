@@ -146,6 +146,7 @@ class XPathExpression;
 class XPathNSResolver;
 class XPathResult;
 template<typename> class Sequence;
+struct PropAndValue;
 
 template<typename, typename> class CallbackObjectHolder;
 typedef CallbackObjectHolder<NodeFilter, nsIDOMNodeFilter> NodeFilterHolder;
@@ -202,6 +203,9 @@ public:
   uint64_t mRestyleTime;
   void UpdateRestyleTime();
   void SetWantsStylo(bool aWants);
+  void SetDefaultWantsStylo(bool aWants);
+
+  void GatherStyles(nsTArray<mozilla::dom::PropAndValue>& aResult);
 
   /**
    * Let the document know that we're starting to load data into it.

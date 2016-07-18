@@ -263,6 +263,8 @@
 #endif // MOZ_WEBRTC
 #include "mozilla/RestyleManager.h"
 
+#include "nsRuleData.h"
+
 using namespace mozilla;
 using namespace mozilla::dom;
 
@@ -13556,5 +13558,57 @@ nsIDocument::SetWantsStylo(bool aWants)
   nsCOMPtr<nsIDocShell> docShell = GetDocShell();
   if (docShell) {
     static_cast<nsDocShell*>(docShell.get())->SetWantsStylo(aWants);
+  }
+}
+
+void
+nsIDocument::SetDefaultWantsStylo(bool aWants)
+{
+  nsDocShell::SetDefaultWantsStylo(aWants);
+}
+
+void
+GatherStyles(nsIFrame* aFrame, nsPresContext* aPresContext, nsTArray<PropAndValue>& aResult)
+{
+  for (nsRuleNode* rn = aFrame->StyleContext()->RuleNode(); rn; rn = rn->GetParent()) {
+    for (nsStyleStructID sid = nsStyleStructID(0); sid < nsStyleStructID_Length; sid = nsStyleStructID(sid + 1)) {
+      size_t nprops = nsCSSProps::PropertyCountInStruct(sid);
+      void* dataStorage = alloca(nprops * sizeof(nsCSSValue));
+      AutoCSSValueArray dataArray(dataStorage, nprops);
+      nsRuleData ruleData(nsCachedStyleData::GetBitForSID(sid), dataArray.get(), aPresContext, aFrame->StyleContext());
+      ruleData.mValueOffsets[sid] = 0;
+      nsIStyleRule* rule = rn->GetRule();
+      if (rule) {
+        rule->MapRuleInfoInto(&ruleData);
+      }
+      for (nsCSSProperty p = nsCSSProperty(0); p < eCSSProperty_COUNT_no_shorthands; p = nsCSSProperty(p + 1)) {
+        if (nsCSSProps::kSIDTable[p] == sid && nsCSSProps::PropertyIndexInStruct(p) != size_t(-1)) {
+          const nsCSSValue* v = ruleData.ValueFor(p);
+          if (v->GetUnit() != eCSSUnit_Null) {
+            nsString s;
+            v->AppendToString(p, s, nsCSSValue::eNormalized);
+            PropAndValue* entry = aResult.AppendElement();
+            entry->mProperty = NS_ConvertUTF8toUTF16(nsCSSProps::GetStringValue(p));
+            entry->mValue = s;
+          }
+        }
+      }
+    }
+  }
+
+  for (nsIFrame::ChildListIterator it(aFrame); !it.IsDone(); it.Next()) {
+    for (nsIFrame* child : it.CurrentList()) {
+      GatherStyles(child, aPresContext, aResult);
+    }
+  }
+}
+
+void
+nsIDocument::GatherStyles(nsTArray<PropAndValue>& aResult)
+{
+  if (nsIPresShell* shell = GetShell()) {
+    if (nsIFrame* rootFrame = shell->GetRootFrame()) {
+      ::GatherStyles(rootFrame, shell->GetPresContext(), aResult);
+    }
   }
 }

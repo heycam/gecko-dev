@@ -307,6 +307,7 @@ private:
 public:
   bool WantsStylo() const { return mWantsStylo; }
   void SetWantsStylo(bool aWants) { mWantsStylo = aWants; }
+  static void SetDefaultWantsStylo(bool aWants) { sDefaultWantsStylo = aWants; }
 
   // Tell the favicon service that aNewURI has the same favicon as aOldURI.
   static void CopyFavicon(nsIURI* aOldURI,
@@ -1037,6 +1038,7 @@ private:
   nsWeakPtr mOpener;
   mozilla::DocShellOriginAttributes mOriginAttributes;
   bool mWantsStylo;
+  static bool sDefaultWantsStylo;
 
   // A depth count of how many times NotifyRunToCompletionStart
   // has been called without a matching NotifyRunToCompletionStop.

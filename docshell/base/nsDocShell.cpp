@@ -814,7 +814,7 @@ nsDocShell::nsDocShell()
   , mFrameType(FRAME_TYPE_REGULAR)
   , mPrivateBrowsingId(0)
   , mParentCharsetSource(0)
-  , mWantsStylo(true)
+  , mWantsStylo(sDefaultWantsStylo)
   , mJSRunToCompletionDepth(0)
 {
   AssertOriginAttributesMatchPrivateBrowsing();
@@ -14613,3 +14613,6 @@ nsDocShell::GetCommandManager()
   NS_ENSURE_SUCCESS(EnsureCommandHandler(), nullptr);
   return mCommandManager;
 }
+
+/* static */ bool
+nsDocShell::sDefaultWantsStylo = true;
