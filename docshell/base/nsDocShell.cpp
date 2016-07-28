@@ -816,6 +816,9 @@ nsDocShell::nsDocShell()
   , mParentCharsetSource(0)
   , mJSRunToCompletionDepth(0)
   , mTouchEventsOverride(nsIDocShell::TOUCHEVENTS_OVERRIDE_NONE)
+#ifdef MOZ_STYLO
+  , mWantsStylo(true)
+#endif
 {
   AssertOriginAttributesMatchPrivateBrowsing();
   mHistoryID = ++gDocshellIDCounter;
@@ -943,6 +946,9 @@ NS_INTERFACE_MAP_BEGIN(nsDocShell)
   NS_INTERFACE_MAP_ENTRY(nsIDOMStorageManager)
   NS_INTERFACE_MAP_ENTRY(nsINetworkInterceptController)
   NS_INTERFACE_MAP_ENTRY(nsIDeprecationWarner)
+#ifdef MOZ_STYLO
+  NS_INTERFACE_MAP_ENTRY(nsIStyloControl)
+#endif
 NS_INTERFACE_MAP_END_INHERITING(nsDocLoader)
 
 NS_IMETHODIMP
@@ -14648,3 +14654,27 @@ nsDocShell::GetCommandManager()
   NS_ENSURE_SUCCESS(EnsureCommandHandler(), nullptr);
   return mCommandManager;
 }
+
+#ifdef MOZ_STYLO
+NS_IMETHODIMP
+nsDocShell::GetUsingStylo(bool* aResult)
+{
+  nsCOMPtr<nsIDocument> doc = mContentViewer->GetDocument();
+  *aResult = doc && doc->IsStyledByServo();
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsDocShell::GetWantsStylo(bool* aResult)
+{
+  *aResult = mWantsStylo;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsDocShell::SetWantsStylo(bool aWants)
+{
+  mWantsStylo = aWants;
+  return NS_OK;
+}
+#endif

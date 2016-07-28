@@ -1,0 +1,23 @@
+/* -*- Mode: IDL; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+[scriptable, uuid(8fc3c097-2300-4f36-891f-312f276a5ebe)]
+interface nsIStyloControl : nsISupports {
+
+  /**
+   * Returns whether the document loaded in the docshell is using a
+   * Servo-backed style system.
+   */
+  readonly attribute boolean usingStylo;
+
+  /**
+   * Whether the next document loaded in the docshell will try to use
+   * a Servo-backed style system.
+   */
+  attribute boolean wantsStylo;
+};

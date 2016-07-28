@@ -14,6 +14,7 @@
 #include "nsIBaseWindow.h"
 #include "nsINetworkInterceptController.h"
 #include "nsIScrollable.h"
+#include "nsIStyloControl.h"
 #include "nsITextScroll.h"
 #include "nsIContentViewerContainer.h"
 #include "nsIDOMStorageManager.h"
@@ -148,6 +149,9 @@ class nsDocShell final
   , public nsIDOMStorageManager
   , public nsINetworkInterceptController
   , public nsIDeprecationWarner
+#ifdef MOZ_STYLO
+  , public nsIStyloControl
+#endif
   , public mozilla::SupportsWeakPtr<nsDocShell>
 {
   friend class nsDSURIContentListener;
@@ -180,6 +184,9 @@ public:
   NS_DECL_NSIWEBSHELLSERVICES
   NS_DECL_NSINETWORKINTERCEPTCONTROLLER
   NS_DECL_NSIDEPRECATIONWARNER
+#ifdef MOZ_STYLO
+  NS_DECL_NSISTYLOCONTROL
+#endif
   NS_FORWARD_SAFE_NSIDOMSTORAGEMANAGER(TopSessionStorageManager())
 
   NS_IMETHOD Stop() override
@@ -1042,6 +1049,10 @@ private:
   // Whether or not touch events are overridden. Possible values are defined
   // as constants in the nsIDocShell.idl file.
   uint32_t mTouchEventsOverride;
+
+#ifdef MOZ_STYLO
+  bool mWantsStylo;
+#endif
 
   // Separate function to do the actual name (i.e. not _top, _self etc.)
   // searching for FindItemWithName.
