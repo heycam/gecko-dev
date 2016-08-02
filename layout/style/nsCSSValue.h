@@ -205,7 +205,7 @@ public:
 
   nsRefPtrHashtable<nsPtrHashKey<nsIDocument>, imgRequestProxy> mRequests;
 
-  NS_INLINE_DECL_REFCOUNTING(ImageValue)
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(ImageValue)
 };
 
 struct GridNamedArea {

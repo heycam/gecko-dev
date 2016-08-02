@@ -597,6 +597,7 @@ Gecko_CopyListStyleTypeFrom(nsStyleList* dst, const nsStyleList* src)
 
 NS_IMPL_HOLDER_FFI_REFCOUNTING(nsIPrincipal, Principal)
 NS_IMPL_HOLDER_FFI_REFCOUNTING(nsIURI, URI)
+NS_IMPL_THREADSAFE_FFI_REFCOUNTING(nsStyleImageRequest, StyleImageRequest)
 
 void
 Gecko_SetMozBinding(nsStyleDisplay* aDisplay,

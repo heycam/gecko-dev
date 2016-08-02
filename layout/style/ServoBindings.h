@@ -49,6 +49,7 @@ struct RawServoStyleSet;
 class nsHTMLCSSStyleSheet;
 struct nsStyleList;
 struct nsStyleImage;
+class nsStyleImageRequest;
 struct nsStyleGradientStop;
 class nsStyleGradient;
 class nsStyleCoord;
@@ -172,6 +173,7 @@ nsStyleGradient* Gecko_CreateGradient(uint8_t shape,
 // Object refcounting.
 NS_DECL_HOLDER_FFI_REFCOUNTING(nsIPrincipal, Principal)
 NS_DECL_HOLDER_FFI_REFCOUNTING(nsIURI, URI)
+NS_DECL_THREADSAFE_FFI_REFCOUNTING(nsStyleImageRequest, StyleImageRequest)
 
 // Display style.
 void Gecko_SetMozBinding(nsStyleDisplay* style_struct,
