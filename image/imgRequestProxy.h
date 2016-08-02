@@ -245,4 +245,16 @@ protected:
   nsCOMPtr<nsIPrincipal> mPrincipal;
 };
 
+inline nsISupports*
+ToCanonicalSupports(imgRequestProxy* aProxy)
+{
+  return static_cast<imgIRequest*>(aProxy);
+}
+
+inline nsISupports*
+ToSupports(imgRequestProxy* aProxy)
+{
+  return static_cast<imgIRequest*>(aProxy);
+}
+
 #endif // mozilla_image_imgRequestProxy_h

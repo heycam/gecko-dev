@@ -36,6 +36,7 @@
 #include "mozilla/Likely.h"
 #include "nsIURI.h"
 #include "nsIDocument.h"
+#include "nsNetUtil.h"
 #include <algorithm>
 
 using namespace mozilla;
@@ -90,6 +91,21 @@ EqualImages(imgIRequest *aImage1, imgIRequest* aImage2)
   aImage1->GetURI(getter_AddRefs(uri1));
   aImage2->GetURI(getter_AddRefs(uri2));
   return EqualURIs(uri1, uri2);
+}
+
+static bool
+DefinitelyEqualImages(nsStyleImageRequest* aRequest1,
+                      nsStyleImageRequest* aRequest2)
+{
+  if (aRequest1 == aRequest2) {
+    return true;
+  }
+
+  if (!aRequest1 || !aRequest2) {
+    return false;
+  }
+
+  return aRequest1->DefinitelyEquals(*aRequest2);
 }
 
 // A nullsafe wrapper for strcmp. We depend on null-safety.
@@ -1854,6 +1870,123 @@ nsStyleGradient::HasCalc()
          mRadiusX.IsCalcUnit() || mRadiusY.IsCalcUnit();
 }
 
+
+// --------------------
+// nsStyleImageRequest
+
+nsStyleImageRequest::nsStyleImageRequest(imgRequestProxy* aRequestProxy)
+  : mImageValue(nullptr)
+  , mTrackImageIsPending(false)
+  , mResolved(true)
+{
+  MOZ_ASSERT(aRequestProxy);
+  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(aRequestProxy);
+}
+
+nsStyleImageRequest::nsStyleImageRequest(
+    nsStringBuffer* aURLBuffer,
+    already_AddRefed<PtrHolder<nsIURI>> aBaseURI,
+    already_AddRefed<PtrHolder<nsIURI>> aReferrer,
+    already_AddRefed<PtrHolder<nsIPrincipal>> aPrincipal)
+  : mTrackImageIsPending(false)
+  , mResolved(false)
+{
+  mImageValue = new css::ImageValue(aURLBuffer, Move(aBaseURI),
+                                    Move(aReferrer), Move(aPrincipal));
+  mImageValue->AddRef();
+}
+
+nsStyleImageRequest::~nsStyleImageRequest()
+{
+  NS_ReleaseOnMainThread(dont_AddRef(mImageValue));
+}
+
+void
+nsStyleImageRequest::TrackImage(nsPresContext* aContext)
+{
+  MOZ_ASSERT(!mTrackImageIsPending);
+
+  if (!IsResolved()) {
+    mTrackImageIsPending = true;
+    return;
+  }
+
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (!mRequestProxy) {
+    // We are resolved, but the image load failed.
+    return;
+  }
+
+  // Register the image with the document
+  if (nsIDocument* doc = aContext->Document()) {
+    doc->AddImage(mRequestProxy);
+  }
+}
+
+void
+nsStyleImageRequest::UntrackImage(nsPresContext* aContext)
+{
+  if (!IsResolved()) {
+    MOZ_ASSERT(mTrackImageIsPending);
+    mTrackImageIsPending = false;
+    return;
+  }
+
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (!mRequestProxy) {
+    // We are resolved, but the image load failed.
+    return;
+  }
+
+  // Unregister the image with the document
+  if (nsIDocument* doc = aContext->Document()) {
+    doc->RemoveImage(mRequestProxy);
+  }
+}
+
+void
+nsStyleImageRequest::Resolve(nsPresContext* aPresContext)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(!IsResolved(), "already resolved");
+
+  // For now, just have unique nsCSSValue/ImageValue objects.  We should
+  // really store the ImageValue on the Servo specified value, so that we can
+  // share imgRequestProxys that come from the same rule in the same
+  // document.
+  mImageValue->Initialize(aPresContext->Document());
+
+  nsCSSValue value;
+  value.SetImageValue(mImageValue);
+  RefPtr<imgRequestProxy> req =
+    value.GetImageValue(aPresContext->Document());
+  if (!aPresContext->IsDynamic()) {
+    req = nsContentUtils::GetStaticRequest(req);
+  }
+
+  if (!req) {
+    // The image load failed.
+    return;
+  }
+
+  // The nsMainThreadPtrHolder is not strict, so that we can call operator==
+  // on the imgRequestProxy from off-main-thread CalcStyleDifference calls.
+  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(req, false);
+
+  if (mTrackImageIsPending) {
+    mTrackImageIsPending = false;
+    TrackImage(aPresContext);
+  }
+}
+
+bool
+nsStyleImageRequest::DefinitelyEquals(const nsStyleImageRequest& aOther) const
+{
+  return DefinitelyEqualURIs(mImageValue, aOther.mImageValue);
+}
+
 // --------------------
 // CachedBorderImageData
 //
@@ -2023,7 +2156,6 @@ nsStyleImage::UntrackImage(nsPresContext* aContext)
   MOZ_ASSERT(mType == eStyleImageType_Image,
              "Can't untrack image when there isn't one!");
 
-  // Unregister the image with the document
   nsIDocument* doc = aContext->Document();
   if (doc) {
     doc->RemoveImage(mImage);
