@@ -181,8 +181,17 @@ struct ImageValue : public URLValueData
   ImageValue(nsIURI* aURI, nsStringBuffer* aString, nsIURI* aReferrer,
              nsIPrincipal* aOriginPrincipal, nsIDocument* aDocument);
 
+  // This constructor is safe to call from any thread, but Initialize
+  // must be called later for the object to be useful.
+  ImageValue(nsStringBuffer* aString,
+             already_AddRefed<PtrHolder<nsIURI>> aBaseURI,
+             already_AddRefed<PtrHolder<nsIURI>> aReferrer,
+             already_AddRefed<PtrHolder<nsIPrincipal>> aOriginPrincipal);
+
   ImageValue(const ImageValue&) = delete;
   ImageValue& operator=(const ImageValue&) = delete;
+
+  void Initialize(nsIDocument* aDocument);
 
   // XXXheycam We should have our own SizeOfIncludingThis method.
 

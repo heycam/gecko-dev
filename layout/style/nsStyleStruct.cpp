@@ -36,6 +36,7 @@
 #include "mozilla/Likely.h"
 #include "nsIURI.h"
 #include "nsIDocument.h"
+#include "nsNetUtil.h"
 #include <algorithm>
 
 using namespace mozilla;
@@ -1911,6 +1912,95 @@ nsStyleGradient::HasCalc()
          mRadiusX.IsCalcUnit() || mRadiusY.IsCalcUnit();
 }
 
+
+// --------------------
+// nsStyleImageRequest
+
+nsStyleImageRequest::nsStyleImageRequest(imgRequestProxy* aRequestProxy)
+  : mTrackImageIsPending(false)
+{
+  MOZ_ASSERT(aRequestProxy);
+  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(aRequestProxy);
+}
+
+nsStyleImageRequest::nsStyleImageRequest(nsStringBuffer* aURLBuffer,
+                                         ThreadSafeURIHolder* aBaseURI,
+                                         ThreadSafeURIHolder* aReferrer,
+                                         ThreadSafePrincipalHolder* aPrincipal)
+  : mTrackImageIsPending(false)
+{
+  mImageValue = new css::ImageValue(aURLBuffer,
+                                    do_AddRef(aBaseURI),
+                                    do_AddRef(aReferrer),
+                                    do_AddRef(aPrincipal));
+  mImageValue->AddRef();
+}
+
+nsStyleImageRequest::~nsStyleImageRequest()
+{
+  NS_ReleaseOnMainThread(dont_AddRef(mImageValue));
+}
+
+void
+nsStyleImageRequest::TrackImage(nsPresContext* aContext)
+{
+  MOZ_ASSERT(!mTrackImageIsPending);
+
+  if (mRequestProxy) {
+    // Register the image with the document
+    nsIDocument* doc = aContext->Document();
+    if (doc) {
+      doc->AddImage(mRequestProxy);
+    }
+  } else {
+    mTrackImageIsPending = true;
+  }
+}
+
+void
+nsStyleImageRequest::UntrackImage(nsPresContext* aContext)
+{
+  if (mRequestProxy) {
+    MOZ_ASSERT(!mTrackImageIsPending);
+
+    // Unregister the image with the document
+    nsIDocument* doc = aContext->Document();
+    if (doc) {
+      doc->RemoveImage(mRequestProxy);
+    }
+  } else {
+    MOZ_ASSERT(mTrackImageIsPending);
+    mTrackImageIsPending = false;
+  }
+}
+
+void
+nsStyleImageRequest::Resolve(nsPresContext* aPresContext)
+{
+  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_ASSERT(!mRequestProxy, "already resolved");
+
+  // For now, just have unique nsCSSValue/ImageValue objects.  We should
+  // really store the ImageValue on the Servo specified value, so that we can
+  // share imgRequestProxys that come from the same rule in the same
+  // document.
+  mImageValue->Initialize(aPresContext->Document());
+
+  nsCSSValue value;
+  value.SetImageValue(mImageValue);
+  RefPtr<imgRequestProxy> req =
+    value.GetImageValue(aPresContext->Document());
+  if (!aPresContext->IsDynamic()) {
+    req = nsContentUtils::GetStaticRequest(req);
+  }
+  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(req);
+
+  if (mTrackImageIsPending) {
+    mTrackImageIsPending = false;
+    TrackImage(aPresContext);
+  }
+}
+
 // --------------------
 // CachedBorderImageData
 //
@@ -2080,7 +2170,6 @@ nsStyleImage::UntrackImage(nsPresContext* aContext)
   MOZ_ASSERT(mType == eStyleImageType_Image,
              "Can't untrack image when there isn't one!");
 
-  // Unregister the image with the document
   nsIDocument* doc = aContext->Document();
   if (doc) {
     doc->RemoveImage(mImage);

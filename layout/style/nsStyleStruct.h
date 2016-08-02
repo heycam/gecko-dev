@@ -273,6 +273,51 @@ private:
   nsStyleGradient& operator=(const nsStyleGradient& aOther) = delete;
 };
 
+/**
+ * A wrapper for an imgRequestProxy that can be created off the main
+ * thread, but which must be resolved with the data to produce an
+ * imgRequestProxy on the main thread later if it is to be useful.
+ */
+class nsStyleImageRequest
+{
+public:
+  // Must be called from the main thread.
+  nsStyleImageRequest(imgRequestProxy* aRequestProxy);
+
+  // Can be called from any thread, but Resolve() must be called later
+  // on the main thread before get() can be used.
+  nsStyleImageRequest(nsStringBuffer* aURLBuffer,
+                      nsMainThreadPtrHolder<nsIURI>* aBaseURI,
+                      nsMainThreadPtrHolder<nsIURI>* aReferrer,
+                      nsMainThreadPtrHolder<nsIPrincipal>* aPrincipal);
+
+  void TrackImage(nsPresContext* aPresContext);
+  void UntrackImage(nsPresContext* aPresContext);
+
+  void Resolve(nsPresContext* aPresContext);
+
+  const imgRequestProxy* get() const {
+    MOZ_ASSERT(mRequestProxy, "Resolve() must be called first");
+    return mRequestProxy.get();
+  }
+  imgRequestProxy* get() {
+    MOZ_ASSERT(mRequestProxy, "Resolve() must be called first");
+    return mRequestProxy.get();
+  }
+
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(nsStyleImageRequest);
+
+private:
+  nsStyleImageRequest& operator=(const nsStyleImageRequest& aOther) = delete;
+
+  ~nsStyleImageRequest();
+
+  nsMainThreadPtrHandle<imgRequestProxy> mRequestProxy;
+  mozilla::css::ImageValue* mImageValue;  // we can AddRef on an arbitrary
+                                          // thread, but Release on main
+  bool mTrackImageIsPending;
+};
+
 enum nsStyleImageType {
   eStyleImageType_Null,
   eStyleImageType_Image,
