@@ -117,6 +117,7 @@ function OnInitialLoad()
     addEventListener("MozPaintWaitFinished", PaintWaitFinishedListener, true);
 
     LogInfo("Using browser remote="+ gBrowserIsRemote +"\n");
+    LogInfo("Using stylo? " + docShell.QueryInterface(CI.nsIStyloControl).usingStylo + "\n");
 }
 
 function SetFailureTimeout(cb, timeout)
