@@ -123,6 +123,8 @@ struct URLValueData
 
   bool GetLocalURLFlag() const { return mLocalURLFlag; }
 
+  bool IsResolved() const { return mURIResolved; }
+
 private:
   // If mURIResolved is false, mURI stores the base URI.
   // If mURIResolved is true, mURI stores the URI we resolve to; this may be

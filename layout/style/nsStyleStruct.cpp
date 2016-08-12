@@ -64,7 +64,9 @@ static bool
 EqualURIs(mozilla::css::URLValue *aURI1, mozilla::css::URLValue *aURI2)
 {
   return aURI1 == aURI2 ||    // handle null==null, and optimize
-         (aURI1 && aURI2 && aURI1->URIEquals(*aURI2));
+         (aURI1 && aURI2 &&
+          aURI1->IsResolved() && aURI2->IsResolved() &&
+          aURI1->URIEquals(*aURI2));
 }
 
 static
