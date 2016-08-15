@@ -949,13 +949,6 @@ Servo_ComputeRestyleHint(RawGeckoElement* element,
             "non-MOZ_STYLO build");
 }
 
-void
-Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set)
-{
-  MOZ_CRASH("stylo: shouldn't be calling Servo_RestyleDocument in a "
-            "non-MOZ_STYLO build");
-}
-
 void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set)
 {
   MOZ_CRASH("stylo: shouldn't be calling Servo_RestyleSubtree in a "

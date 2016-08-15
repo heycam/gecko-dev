@@ -274,8 +274,7 @@ void Servo_Initialize();
 // Shut down Servo components. Should be called exactly once at shutdown.
 void Servo_Shutdown();
 
-// Restyle the given document or subtree.
-void Servo_RestyleDocument(RawGeckoDocument* doc, RawServoStyleSet* set);
+// Restyle the given subtree.
 void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set);
 
 // Restyle hints.
