@@ -1925,16 +1925,15 @@ nsStyleImageRequest::nsStyleImageRequest(imgRequestProxy* aRequestProxy)
   mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(aRequestProxy);
 }
 
-nsStyleImageRequest::nsStyleImageRequest(nsStringBuffer* aURLBuffer,
-                                         ThreadSafeURIHolder* aBaseURI,
-                                         ThreadSafeURIHolder* aReferrer,
-                                         ThreadSafePrincipalHolder* aPrincipal)
+nsStyleImageRequest::nsStyleImageRequest(
+    nsStringBuffer* aURLBuffer,
+    already_AddRefed<PtrHolder<nsIURI>> aBaseURI,
+    already_AddRefed<PtrHolder<nsIURI>> aReferrer,
+    already_AddRefed<PtrHolder<nsIPrincipal>> aPrincipal)
   : mTrackImageIsPending(false)
 {
-  mImageValue = new css::ImageValue(aURLBuffer,
-                                    do_AddRef(aBaseURI),
-                                    do_AddRef(aReferrer),
-                                    do_AddRef(aPrincipal));
+  mImageValue = new css::ImageValue(aURLBuffer, Move(aBaseURI),
+                                    Move(aReferrer), Move(aPrincipal));
   mImageValue->AddRef();
 }
 
@@ -2091,7 +2090,7 @@ nsStyleImage::DoCopy(const nsStyleImage& aOther)
   SetNull();
 
   if (aOther.mType == eStyleImageType_Image) {
-    SetImageData(aOther.mImage);
+    SetImageRequest(aOther.mImage);
   } else if (aOther.mType == eStyleImageType_Gradient) {
     SetGradientData(aOther.mGradient);
   } else if (aOther.mType == eStyleImageType_Element) {
@@ -2124,7 +2123,7 @@ nsStyleImage::SetNull()
 }
 
 void
-nsStyleImage::SetImageData(imgRequestProxy* aImage)
+nsStyleImage::SetImageRequest(nsStyleImageRequest* aImage)
 {
   MOZ_ASSERT(!mImageTracked,
              "Setting a new image without untracking the old one!");
@@ -2152,11 +2151,7 @@ nsStyleImage::TrackImage(nsPresContext* aContext)
   MOZ_ASSERT(mType == eStyleImageType_Image,
              "Can't track image when there isn't one!");
 
-  // Register the image with the document
-  nsIDocument* doc = aContext->Document();
-  if (doc) {
-    doc->AddImage(mImage);
-  }
+  mImage->TrackImage(aContext);
 
   // Mark state
 #ifdef DEBUG
@@ -2172,10 +2167,7 @@ nsStyleImage::UntrackImage(nsPresContext* aContext)
   MOZ_ASSERT(mType == eStyleImageType_Image,
              "Can't untrack image when there isn't one!");
 
-  nsIDocument* doc = aContext->Document();
-  if (doc) {
-    doc->RemoveImage(mImage);
-  }
+  mImage->UntrackImage(aContext);
 
   // Mark state
 #ifdef DEBUG
@@ -2248,7 +2240,7 @@ nsStyleImage::ComputeActualCropRect(nsIntRect& aActualCropRect,
   }
 
   nsCOMPtr<imgIContainer> imageContainer;
-  mImage->GetImage(getter_AddRefs(imageContainer));
+  GetImageData()->GetImage(getter_AddRefs(imageContainer));
   if (!imageContainer) {
     return false;
   }
@@ -2280,7 +2272,7 @@ nsresult
 nsStyleImage::StartDecoding() const
 {
   if (mType == eStyleImageType_Image) {
-    return mImage->StartDecoding();
+    return GetImageData()->StartDecoding();
   }
   return NS_OK;
 }
@@ -2303,7 +2295,7 @@ nsStyleImage::IsOpaque() const
   MOZ_ASSERT(mType == eStyleImageType_Image, "unexpected image type");
 
   nsCOMPtr<imgIContainer> imageContainer;
-  mImage->GetImage(getter_AddRefs(imageContainer));
+  GetImageData()->GetImage(getter_AddRefs(imageContainer));
   MOZ_ASSERT(imageContainer, "IsComplete() said image container is ready");
 
   // Check if the crop region of the image is opaque.
@@ -2335,7 +2327,7 @@ nsStyleImage::IsComplete() const
     case eStyleImageType_Image:
     {
       uint32_t status = imgIRequest::STATUS_ERROR;
-      return NS_SUCCEEDED(mImage->GetImageStatus(&status)) &&
+      return NS_SUCCEEDED(GetImageData()->GetImageStatus(&status)) &&
              (status & imgIRequest::STATUS_SIZE_AVAILABLE) &&
              (status & imgIRequest::STATUS_FRAME_COMPLETE);
     }
@@ -2357,7 +2349,7 @@ nsStyleImage::IsLoaded() const
     case eStyleImageType_Image:
     {
       uint32_t status = imgIRequest::STATUS_ERROR;
-      return NS_SUCCEEDED(mImage->GetImageStatus(&status)) &&
+      return NS_SUCCEEDED(GetImageData()->GetImageStatus(&status)) &&
              !(status & imgIRequest::STATUS_ERROR) &&
              (status & imgIRequest::STATUS_LOAD_COMPLETE);
     }
@@ -2386,7 +2378,7 @@ nsStyleImage::operator==(const nsStyleImage& aOther) const
   }
 
   if (mType == eStyleImageType_Image) {
-    return EqualImages(mImage, aOther.mImage);
+    return EqualImages(GetImageData(), aOther.GetImageData());
   }
 
   if (mType == eStyleImageType_Gradient) {

@@ -119,6 +119,17 @@ SetImageRequest(function<void(imgRequestProxy*)> aCallback,
   }
 }
 
+static void
+SetStyleImageRequest(function<void(nsStyleImageRequest*)> aCallback,
+                     nsPresContext* aPresContext,
+                     const nsCSSValue& aValue)
+{
+  SetImageRequest([&](imgRequestProxy* aProxy) {
+    RefPtr<nsStyleImageRequest> request = new nsStyleImageRequest(aProxy);
+    aCallback(request);
+  }, aPresContext, aValue);
+}
+
 template<typename ReferenceBox>
 static void
 SetStyleShapeSourceToCSSValue(StyleShapeSource<ReferenceBox>* aShapeSource,
@@ -1212,8 +1223,8 @@ static void SetStyleImageToImageRect(nsStyleContext* aStyleContext,
 
   // <uri>
   if (arr->Item(1).GetUnit() == eCSSUnit_Image) {
-    SetImageRequest([&](imgRequestProxy* req) {
-      aResult.SetImageData(req);
+    SetStyleImageRequest([&](nsStyleImageRequest* req) {
+      aResult.SetImageRequest(req);
     }, aStyleContext->PresContext(), arr->Item(1));
   } else {
     NS_WARNING("nsCSSValue::Image::Image() failed?");
@@ -1248,8 +1259,8 @@ static void SetStyleImage(nsStyleContext* aStyleContext,
 
   switch (aValue.GetUnit()) {
     case eCSSUnit_Image:
-      SetImageRequest([&](imgRequestProxy* req) {
-        aResult.SetImageData(req);
+      SetStyleImageRequest([&](nsStyleImageRequest* req) {
+        aResult.SetImageRequest(req);
       }, aStyleContext->PresContext(), aValue);
       break;
     case eCSSUnit_Function:

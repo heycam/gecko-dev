@@ -32,6 +32,7 @@
 #include "nsCOMArray.h"
 #include "nsTArray.h"
 #include "nsCSSValue.h"
+#include "nsProxyRelease.h"
 #include "imgRequestProxy.h"
 #include "Orientation.h"
 #include "CounterStyleManager.h"
@@ -286,10 +287,11 @@ public:
 
   // Can be called from any thread, but Resolve() must be called later
   // on the main thread before get() can be used.
-  nsStyleImageRequest(nsStringBuffer* aURLBuffer,
-                      nsMainThreadPtrHolder<nsIURI>* aBaseURI,
-                      nsMainThreadPtrHolder<nsIURI>* aReferrer,
-                      nsMainThreadPtrHolder<nsIPrincipal>* aPrincipal);
+  nsStyleImageRequest(
+      nsStringBuffer* aURLBuffer,
+      already_AddRefed<mozilla::PtrHolder<nsIURI>> aBaseURI,
+      already_AddRefed<mozilla::PtrHolder<nsIURI>> aReferrer,
+      already_AddRefed<mozilla::PtrHolder<nsIPrincipal>> aPrincipal);
 
   void TrackImage(nsPresContext* aPresContext);
   void UntrackImage(nsPresContext* aPresContext);
@@ -361,7 +363,7 @@ struct nsStyleImage
   nsStyleImage& operator=(const nsStyleImage& aOther);
 
   void SetNull();
-  void SetImageData(imgRequestProxy* aImage);
+  void SetImageRequest(nsStyleImageRequest* aImage);
   void TrackImage(nsPresContext* aContext);
   void UntrackImage(nsPresContext* aContext);
   void SetGradientData(nsStyleGradient* aGradient);
@@ -371,12 +373,15 @@ struct nsStyleImage
   nsStyleImageType GetType() const {
     return mType;
   }
-  imgRequestProxy* GetImageData() const {
+  nsStyleImageRequest* GetImageRequest() const {
     MOZ_ASSERT(mType == eStyleImageType_Image, "Data is not an image!");
     MOZ_ASSERT(mImage);
     MOZ_ASSERT(mImageTracked,
                "Should be tracking any image we're going to use!");
     return mImage;
+  }
+  imgRequestProxy* GetImageData() const {
+    return GetImageRequest()->get();
   }
   nsStyleGradient* GetGradientData() const {
     NS_ASSERTION(mType == eStyleImageType_Gradient, "Data is not a gradient!");
@@ -470,7 +475,7 @@ private:
 
   nsStyleImageType mType;
   union {
-    imgRequestProxy* mImage;
+    nsStyleImageRequest* mImage;
     nsStyleGradient* mGradient;
     char16_t* mElementId;
   };
