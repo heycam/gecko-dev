@@ -55,6 +55,7 @@ class nsStyleGradient;
 class nsStyleCoord;
 struct nsStyleDisplay;
 struct ServoDeclarationBlock;
+class nsPresContext;
 
 #define NS_DECL_THREADSAFE_FFI_REFCOUNTING(class_, name_)                     \
   void Gecko_AddRef##name_##ArbitraryThread(class_* aPtr);                    \
@@ -258,10 +259,12 @@ bool Servo_CSSSupports(const uint8_t* name, uint32_t name_length,
 
 // Computed style data.
 ServoComputedValues* Servo_GetComputedValues(RawGeckoNode* node);
-ServoComputedValues* Servo_GetComputedValuesForAnonymousBox(ServoComputedValues* parentStyleOrNull,
+ServoComputedValues* Servo_GetComputedValuesForAnonymousBox(nsPresContext* pres_context,
+                                                            ServoComputedValues* parentStyleOrNull,
                                                             nsIAtom* pseudoTag,
                                                             RawServoStyleSet* set);
-ServoComputedValues* Servo_GetComputedValuesForPseudoElement(ServoComputedValues* parent_style,
+ServoComputedValues* Servo_GetComputedValuesForPseudoElement(nsPresContext* pres_context,
+                                                             ServoComputedValues* parent_style,
                                                              RawGeckoElement* match_element,
                                                              nsIAtom* pseudo_tag,
                                                              RawServoStyleSet* set,
@@ -277,7 +280,9 @@ void Servo_Initialize();
 void Servo_Shutdown();
 
 // Restyle the given subtree.
-void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set);
+void Servo_RestyleSubtree(nsPresContext* pres_context,
+                          RawGeckoNode* node,
+                          RawServoStyleSet* set);
 
 // Restyle hints.
 nsRestyleHint Servo_ComputeRestyleHint(RawGeckoElement* element,

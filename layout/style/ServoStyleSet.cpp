@@ -168,6 +168,7 @@ ServoStyleSet::ResolvePseudoElementStyle(Element* aParentElement,
 
   RefPtr<ServoComputedValues> computedValues =
     dont_AddRef(Servo_GetComputedValuesForPseudoElement(
+      mPresContext,
       aParentContext->StyleSource().AsServoComputedValues(),
       aParentElement, pseudoTag, mRawSet.get(), /* is_probe = */ false));
   MOZ_ASSERT(computedValues);
@@ -191,7 +192,8 @@ ServoStyleSet::ResolveAnonymousBoxStyle(nsIAtom* aPseudoTag,
     aParentContext ? aParentContext->StyleSource().AsServoComputedValues()
                    : nullptr;
   RefPtr<ServoComputedValues> computedValues =
-    dont_AddRef(Servo_GetComputedValuesForAnonymousBox(parentStyle, aPseudoTag,
+    dont_AddRef(Servo_GetComputedValuesForAnonymousBox(mPresContext,
+                                                       parentStyle, aPseudoTag,
                                                        mRawSet.get()));
 #ifdef DEBUG
   if (!computedValues) {
@@ -363,6 +365,7 @@ ServoStyleSet::ProbePseudoElementStyle(Element* aParentElement,
 
   RefPtr<ServoComputedValues> computedValues =
     dont_AddRef(Servo_GetComputedValuesForPseudoElement(
+      mPresContext,
       aParentContext->StyleSource().AsServoComputedValues(),
       aParentElement, pseudoTag, mRawSet.get(), /* is_probe = */ true));
 
@@ -430,5 +433,5 @@ void
 ServoStyleSet::RestyleSubtree(nsINode* aNode)
 {
   MOZ_ASSERT(aNode->IsDirtyForServo() || aNode->HasDirtyDescendantsForServo());
-  Servo_RestyleSubtree(aNode, mRawSet.get());
+  Servo_RestyleSubtree(mPresContext, aNode, mRawSet.get());
 }

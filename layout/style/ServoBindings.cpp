@@ -887,7 +887,8 @@ Servo_GetComputedValues(RawGeckoNode* node)
 }
 
 ServoComputedValues*
-Servo_GetComputedValuesForAnonymousBox(ServoComputedValues* parentStyleOrNull,
+Servo_GetComputedValuesForAnonymousBox(nsPresContext* pres_context,
+                                       ServoComputedValues* parentStyleOrNull,
                                        nsIAtom* pseudoTag,
                                        RawServoStyleSet* set)
 {
@@ -896,7 +897,8 @@ Servo_GetComputedValuesForAnonymousBox(ServoComputedValues* parentStyleOrNull,
 }
 
 ServoComputedValues*
-Servo_GetComputedValuesForPseudoElement(ServoComputedValues* parent_style,
+Servo_GetComputedValuesForPseudoElement(nsPresContext* pres_context,
+                                        ServoComputedValues* parent_style,
                                         RawGeckoElement* match_element,
                                         nsIAtom* pseudo_tag,
                                         RawServoStyleSet* set,
@@ -950,7 +952,9 @@ Servo_ComputeRestyleHint(RawGeckoElement* element,
             "non-MOZ_STYLO build");
 }
 
-void Servo_RestyleSubtree(RawGeckoNode* node, RawServoStyleSet* set)
+void Servo_RestyleSubtree(nsPresContext* pres_context,
+                          RawGeckoNode* node,
+                          RawServoStyleSet* set)
 {
   MOZ_CRASH("stylo: shouldn't be calling Servo_RestyleSubtree in a "
             "non-MOZ_STYLO build");
