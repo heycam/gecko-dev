@@ -644,6 +644,33 @@ Gecko_SetGradientImageValue(nsStyleImage* aImage, nsStyleGradient* aGradient)
   aImage->SetGradientData(aGradient);
 }
 
+nsStyleImageRequest*
+Gecko_SetURLImageValue(nsStyleImage* aImage,
+                       const uint8_t* aURLString,
+                       uint32_t aURLStringLength,
+                       ThreadSafeURIHolder* aBaseURI,
+                       ThreadSafeURIHolder* aReferrer,
+                       ThreadSafePrincipalHolder* aPrincipal)
+{
+  MOZ_ASSERT(aImage);
+  MOZ_ASSERT(aURLString);
+  MOZ_ASSERT(aBaseURI);
+  MOZ_ASSERT(aReferrer);
+  MOZ_ASSERT(aPrincipal);
+
+  nsString url;
+  nsDependentCSubstring urlString(reinterpret_cast<const char*>(aURLString),
+                                  aURLStringLength);
+  AppendUTF8toUTF16(urlString, url);
+  RefPtr<nsStringBuffer> urlBuffer = nsCSSValue::BufferFromString(url);
+
+  nsStyleImageRequest* request =
+    new nsStyleImageRequest(urlBuffer, do_AddRef(aBaseURI),
+                            do_AddRef(aReferrer), do_AddRef(aPrincipal));
+  aImage->SetImageRequest(request);
+  return request;
+}
+
 void
 Gecko_CopyImageValueFrom(nsStyleImage* aImage, const nsStyleImage* aOther)
 {
@@ -726,6 +753,12 @@ Gecko_SetStyleCoordCalcValue(nsStyleUnit* aUnit, nsStyleUnion* aValue, nsStyleCo
 }
 
 NS_IMPL_THREADSAFE_FFI_REFCOUNTING(nsStyleCoord::Calc, Calc);
+
+void
+Gecko_ResolveImage(nsStyleImageRequest* aImage, nsPresContext* aPresContext)
+{
+  aImage->Resolve(aPresContext);
+}
 
 #define STYLE_STRUCT(name, checkdata_cb)                                      \
                                                                               \

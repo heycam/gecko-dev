@@ -81,6 +81,11 @@ class nsPresContext;
 
 extern "C" {
 
+// Object refcounting.
+NS_DECL_HOLDER_FFI_REFCOUNTING(nsIPrincipal, Principal)
+NS_DECL_HOLDER_FFI_REFCOUNTING(nsIURI, URI)
+NS_DECL_THREADSAFE_FFI_REFCOUNTING(nsStyleImageRequest, StyleImageRequest)
+
 // DOM Traversal.
 uint32_t Gecko_ChildrenCount(RawGeckoNode* node);
 bool Gecko_NodeIsElement(RawGeckoNode* node);
@@ -163,6 +168,13 @@ void Gecko_CopyListStyleTypeFrom(nsStyleList* dst, const nsStyleList* src);
 // TODO: support url() values (and maybe element() too?).
 void Gecko_SetNullImageValue(nsStyleImage* image);
 void Gecko_SetGradientImageValue(nsStyleImage* image, nsStyleGradient* gradient);
+nsStyleImageRequest* Gecko_SetURLImageValue(nsStyleImage* image,
+                                            const uint8_t* url_bytes,
+                                            uint32_t url_length,
+                                            ThreadSafeURIHolder* base_uri,
+                                            ThreadSafeURIHolder* referrer,
+                                            ThreadSafePrincipalHolder* principal);
+
 void Gecko_CopyImageValueFrom(nsStyleImage* image, const nsStyleImage* other);
 
 nsStyleGradient* Gecko_CreateGradient(uint8_t shape,
@@ -170,11 +182,6 @@ nsStyleGradient* Gecko_CreateGradient(uint8_t shape,
                                       bool repeating,
                                       bool legacy_syntax,
                                       uint32_t stops);
-
-// Object refcounting.
-NS_DECL_HOLDER_FFI_REFCOUNTING(nsIPrincipal, Principal)
-NS_DECL_HOLDER_FFI_REFCOUNTING(nsIURI, URI)
-NS_DECL_THREADSAFE_FFI_REFCOUNTING(nsStyleImageRequest, StyleImageRequest)
 
 // Display style.
 void Gecko_SetMozBinding(nsStyleDisplay* style_struct,
@@ -219,6 +226,10 @@ void Gecko_ResetStyleCoord(nsStyleUnit* unit, nsStyleUnion* value);
 void Gecko_SetStyleCoordCalcValue(nsStyleUnit* unit, nsStyleUnion* value, nsStyleCoord::CalcValue calc);
 
 NS_DECL_THREADSAFE_FFI_REFCOUNTING(nsStyleCoord::Calc, Calc);
+
+// Post-restyle tasks.
+void Gecko_ResolveImage(nsStyleImageRequest* image,
+                        nsPresContext* pres_context);
 
 // Styleset and Stylesheet management.
 //
