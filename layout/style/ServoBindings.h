@@ -230,6 +230,8 @@ NS_DECL_THREADSAFE_FFI_REFCOUNTING(nsStyleCoord::Calc, Calc);
 // Post-restyle tasks.
 void Gecko_ResolveImage(nsStyleImageRequest* image,
                         nsPresContext* pres_context);
+void Gecko_TrackImages(nsPresContext* pres_context,
+                       nsStyleImageLayers* image_layers);
 
 // Styleset and Stylesheet management.
 //

@@ -9344,7 +9344,9 @@ nsLayoutUtils::GetCumulativeApzCallbackTransform(nsIFrame* aFrame)
 /* static */ bool
 nsLayoutUtils::SupportsServoStyleBackend(nsIDocument* aDocument)
 {
+  nsCString s;
   return StyloEnabled() &&
          aDocument->IsHTMLOrXHTML() &&
-         static_cast<nsDocument*>(aDocument)->IsContentDocument();
+         // static_cast<nsDocument*>(aDocument)->IsContentDocument();
+         (aDocument->GetDocumentURI()->GetSpec(s), s.EqualsLiteral("file:///tmp/a.html"));
 }

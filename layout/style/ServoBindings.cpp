@@ -757,7 +757,16 @@ NS_IMPL_THREADSAFE_FFI_REFCOUNTING(nsStyleCoord::Calc, Calc);
 void
 Gecko_ResolveImage(nsStyleImageRequest* aImage, nsPresContext* aPresContext)
 {
+  printf("Gecko_ResolveImage\n");
   aImage->Resolve(aPresContext);
+}
+
+void
+Gecko_TrackImages(nsPresContext* aPresContext,
+                  nsStyleImageLayers* aImageLayers)
+{
+  printf("Gecko_TrackImages\n");
+  aImageLayers->TrackImages(aPresContext);
 }
 
 #define STYLE_STRUCT(name, checkdata_cb)                                      \

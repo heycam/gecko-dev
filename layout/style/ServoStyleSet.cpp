@@ -433,5 +433,8 @@ void
 ServoStyleSet::RestyleSubtree(nsINode* aNode)
 {
   MOZ_ASSERT(aNode->IsDirtyForServo() || aNode->HasDirtyDescendantsForServo());
+  nsCString url;
+  aNode->OwnerDoc()->GetDocumentURI()->GetSpec(url);
+  printf("Servo_RestyleSubtree for %s\n", url.get());
   Servo_RestyleSubtree(mPresContext, aNode, mRawSet.get());
 }
