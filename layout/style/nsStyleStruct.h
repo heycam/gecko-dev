@@ -300,11 +300,18 @@ public:
 
   const imgRequestProxy* get() const {
     MOZ_ASSERT(mRequestProxy, "Resolve() must be called first");
+    MOZ_ASSERT(NS_IsMainThread());
     return mRequestProxy.get();
   }
   imgRequestProxy* get() {
     MOZ_ASSERT(mRequestProxy, "Resolve() must be called first");
+    MOZ_ASSERT(NS_IsMainThread());
     return mRequestProxy.get();
+  }
+
+  bool operator==(const nsStyleImage& aOther) const;
+  bool operator!=(const nsStyleImage& aOther) const {
+    return !(*this == aOther);
   }
 
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(nsStyleImageRequest);

@@ -93,6 +93,13 @@ EqualImages(imgIRequest *aImage1, imgIRequest* aImage2)
   return EqualURIs(uri1, uri2);
 }
 
+static bool
+EqualImages(nsStyleImageRequest* aImage1, nsStyleImageRequest* aImage2)
+{
+  return aImage1 == aImage2 ||
+         (aImage1 && aImage2 && *aImage1 == *aImage2);
+}
+
 // A nullsafe wrapper for strcmp. We depend on null-safety.
 static int
 safe_strcmp(const char16_t* a, const char16_t* b)
@@ -1919,10 +1926,15 @@ nsStyleGradient::HasCalc()
 // nsStyleImageRequest
 
 nsStyleImageRequest::nsStyleImageRequest(imgRequestProxy* aRequestProxy)
-  : mTrackImageIsPending(false)
+  : mImageValue(nullptr)
+  , mTrackImageIsPending(false)
 {
   MOZ_ASSERT(aRequestProxy);
-  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(aRequestProxy);
+
+  // The nsMainThreadPtrHolder is not strict, so that we can call operator==
+  // on the imgRequestProxy from off-main-thread CalcStyleDifference calls.
+  mRequestProxy =
+    new nsMainThreadPtrHolder<imgRequestProxy>(aRequestProxy, false);
 }
 
 nsStyleImageRequest::nsStyleImageRequest(
@@ -1951,6 +1963,7 @@ nsStyleImageRequest::TrackImage(nsPresContext* aContext)
     // Register the image with the document
     nsIDocument* doc = aContext->Document();
     if (doc) {
+      MOZ_ASSERT(NS_IsMainThread());
       doc->AddImage(mRequestProxy);
     }
   } else {
@@ -1967,6 +1980,7 @@ nsStyleImageRequest::UntrackImage(nsPresContext* aContext)
     // Unregister the image with the document
     nsIDocument* doc = aContext->Document();
     if (doc) {
+      MOZ_ASSERT(NS_IsMainThread());
       doc->RemoveImage(mRequestProxy);
     }
   } else {
@@ -1994,12 +2008,38 @@ nsStyleImageRequest::Resolve(nsPresContext* aPresContext)
   if (!aPresContext->IsDynamic()) {
     req = nsContentUtils::GetStaticRequest(req);
   }
-  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(req);
+
+  // The nsMainThreadPtrHolder is not strict, so that we can call operator==
+  // on the imgRequestProxy from off-main-thread CalcStyleDifference calls.
+  mRequestProxy = new nsMainThreadPtrHolder<imgRequestProxy>(req, false);
 
   if (mTrackImageIsPending) {
     mTrackImageIsPending = false;
     TrackImage(aPresContext);
   }
+}
+
+bool
+nsStyleImageRequest::operator==(const nsStyleImageRequest& aOther) const
+{
+  // XXXheycam This is just not safe to run off the main thread, but
+  // we need to be able to since CalcStyleDifference is called off
+  // main thread.  What to do?
+  NS_WARN_IF_FALSE(NS_IsMainThread()
+                   "comparing URIs off main thread is unsafe :(");
+
+  MOZ_ASSERT(mRequestProxy || mImageValue);
+  MOZ_ASSERT(aOther.mRequestProxy || aOther.mImageValue);
+
+  if (mRequestProxy && aOther.mRequestProxy) {
+    // Both nsStyleImageRequests are resolved.  Ask the imgRequestProxys
+    // to compare themselves.
+    return EqualImages(mRequestProxy, aOther.mRequestProxy);
+  }
+
+  // XXXheycam Handle this or aOther or both being unresolved, by comparing
+  // members on mImageValue.
+  return false;
 }
 
 // --------------------
@@ -2378,7 +2418,7 @@ nsStyleImage::operator==(const nsStyleImage& aOther) const
   }
 
   if (mType == eStyleImageType_Image) {
-    return EqualImages(GetImageData(), aOther.GetImageData());
+    return EqualImages(GetImageRequest(), aOther.GetImageRequest());
   }
 
   if (mType == eStyleImageType_Gradient) {
