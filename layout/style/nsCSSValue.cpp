@@ -2683,6 +2683,66 @@ css::URLValueData::GetURI() const
   return mURI;
 }
 
+already_AddRefed<nsIURI>
+css::URLValueData::ResolveLocalRef(nsIURI* aURI) const
+{
+  nsCOMPtr<nsIURI> result;
+
+  if (mIsLocalRef) {
+    nsCString ref;
+    mURI->GetRef(ref);
+
+    aURI->Clone(getter_AddRefs(result));
+    result->SetRef(ref);
+  } else {
+    result = mURI;
+  }
+
+  return result.forget();
+}
+
+already_AddRefed<nsIURI>
+css::URLValueData::ResolveLocalRef(nsIContent* aContent) const
+{
+  nsCOMPtr<nsIURI> url = aContent->GetBaseURI();
+  return ResolveLocalRef(url);
+}
+
+void
+css::URLValueData::GetSourceString(nsString& aRef) const
+{
+  nsIURI* uri = GetURI();
+  if (!uri) {
+    aRef.Truncate();
+    return;
+  }
+
+  nsCString cref;
+  if (mIsLocalRef) {
+    // XXXheycam It's possible we can just return mString in this case, since
+    // it should be the "#fragment" string the URLValueData was created with.
+    uri->GetRef(cref);
+    cref.Insert('#', 0);
+  } else {
+    uri->GetSpec(cref);
+  }
+
+  aRef = NS_ConvertUTF8toUTF16(cref);
+}
+
+bool
+css::URLValueData::EqualsExceptRef(nsIURI* aURI) const
+{
+  nsIURI* uri = GetURI();
+  if (!uri) {
+    return false;
+  }
+
+  bool ret = false;
+  uri->EqualsExceptRef(aURI, &ret);
+  return ret;
+}
+
 size_t
 css::URLValueData::SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const
 {

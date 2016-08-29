@@ -32,6 +32,7 @@
 #include "gfxFontFamilyList.h"
 
 class imgRequestProxy;
+class nsIContent;
 class nsIDocument;
 class nsIPrincipal;
 class nsIURI;
@@ -130,6 +131,17 @@ struct URLValueData
   size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
   bool IsLocalRef() const { return mIsLocalRef; }
+
+  // When matching a url with mIsLocalRef set, resolve it against aURI;
+  // Otherwise, ignore aURL and return mURL directly.
+  already_AddRefed<nsIURI> ResolveLocalRef(nsIURI* aURI) const;
+  already_AddRefed<nsIURI> ResolveLocalRef(nsIContent* aContent) const;
+
+  // Serializes mURI as a computed URI value, taking into account mIsLocalRef
+  // and serializing just the fragment if true.
+  void GetSourceString(nsString& aRef) const;
+
+  bool EqualsExceptRef(nsIURI* aURI) const;
 
 private:
   // mURI stores the lazily resolved URI.  This may be null if the URI is
