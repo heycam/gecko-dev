@@ -113,7 +113,7 @@ struct URLValueData
   bool operator==(const URLValueData& aOther) const;
 
   // Returns true iff we know for sure, by comparing the mBaseURI pointer,
-  // the specified url() value mString, and the mLocalURLFlag, that these
+  // the specified url() value mString, and the mIsLocalRef, that these
   // two URLValueData objects represent the same computed url() value.
   //
   // Doesn't look at mReferrer or mOriginPrincipal.
@@ -129,7 +129,7 @@ struct URLValueData
 
   size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
-  bool GetLocalURLFlag() const { return mLocalURLFlag; }
+  bool IsLocalRef() const { return mIsLocalRef; }
 
 private:
   // mURI stores the lazily resolved URI.  This may be null if the URI is
@@ -142,9 +142,8 @@ public:
   PtrHandle<nsIPrincipal> mOriginPrincipal;
 private:
   mutable bool mURIResolved;
-  // mLocalURLFlag is set when url starts with a U+0023 number
-  // sign(#) character.
-  bool mLocalURLFlag;
+  // mIsLocalRef is set when url starts with a U+0023 number sign(#) character.
+  bool mIsLocalRef;
 
   URLValueData(const URLValueData& aOther) = delete;
   URLValueData& operator=(const URLValueData& aOther) = delete;

@@ -2603,7 +2603,7 @@ css::URLValueData::URLValueData(already_AddRefed<PtrHolder<nsIURI>> aURI,
   , mReferrer(Move(aReferrer))
   , mOriginPrincipal(Move(aOriginPrincipal))
   , mURIResolved(true)
-  , mLocalURLFlag(IsLocalRefURL(aString))
+  , mIsLocalRef(IsLocalRefURL(aString))
 {
   MOZ_ASSERT(mString);
   MOZ_ASSERT(mBaseURI);
@@ -2620,7 +2620,7 @@ css::URLValueData::URLValueData(nsStringBuffer* aString,
   , mReferrer(Move(aReferrer))
   , mOriginPrincipal(Move(aOriginPrincipal))
   , mURIResolved(false)
-  , mLocalURLFlag(IsLocalRefURL(aString))
+  , mIsLocalRef(IsLocalRefURL(aString))
 {
   MOZ_ASSERT(aString);
   MOZ_ASSERT(mBaseURI);
@@ -2645,7 +2645,7 @@ css::URLValueData::operator==(const URLValueData& aOther) const
             eq)) &&
           (mOriginPrincipal == aOther.mOriginPrincipal ||
            self.mOriginPrincipal.get()->Equals(other.mOriginPrincipal.get())) &&
-          mLocalURLFlag == aOther.mLocalURLFlag;
+          mIsLocalRef == aOther.mIsLocalRef;
 }
 
 bool
