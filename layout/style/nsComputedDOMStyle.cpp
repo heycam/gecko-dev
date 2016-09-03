@@ -2407,6 +2407,31 @@ nsComputedDOMStyle::SetValueToFragmentOrURL(
   }
 }
 
+void
+nsComputedDOMStyle::SetValueToURLValue(const css::URLValueData* aURL,
+                                       nsROCSSPrimitiveValue* aValue)
+{
+  if (!aURL) {
+    aValue->SetIdent(eCSSKeyword_none);
+    return;
+  }
+
+  if (aURL->IsLocalRef()) {
+    nsString fragment;
+    aURL->GetSourceString(fragment);
+    fragment.Insert(u"url(\"", 0);
+    fragment.Append(u"\")");
+    aValue->SetString(fragment);
+  } else {
+    nsCOMPtr<nsIURI> url = aURL->GetURI();
+    if (url) {
+      aValue->SetURI(url);
+    } else {
+      aValue->SetIdent(eCSSKeyword_none);
+    }
+  }
+}
+
 already_AddRefed<CSSValue>
 nsComputedDOMStyle::DoGetBackgroundPosition()
 {
@@ -6065,7 +6090,7 @@ nsComputedDOMStyle::GetShapeSource(
                                                 aBoxKeywordTable);
     case StyleShapeSourceType::URL: {
       RefPtr<nsROCSSPrimitiveValue> val = new nsROCSSPrimitiveValue;
-      SetValueToFragmentOrURL(aShapeSource.GetURL(), val);
+      SetValueToURLValue(aShapeSource.GetURL(), val);
       return val.forget();
     }
     case StyleShapeSourceType::None: {
