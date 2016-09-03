@@ -918,6 +918,36 @@ ResolveFragmentOrURL(nsIFrame* aFrame, const FragmentOrURL* aFragmentOrURL)
   return aFragmentOrURL->Resolve(baseURI);
 }
 
+static already_AddRefed<nsIURI>
+ResolveURLUsingLocalRef(nsIFrame* aFrame, const css::URLValue* aURL)
+{
+  MOZ_ASSERT(aFrame);
+
+  if (!aURL) {
+    return nullptr;
+  }
+
+  // Non-local-reference URL.
+  if (!aURL->IsLocalRef()) {
+    nsCOMPtr<nsIURI> result = aURL->GetURI();
+    return result.forget();
+  }
+
+  nsIContent* content = aFrame->GetContent();
+  nsCOMPtr<nsIURI> baseURI = content->GetBaseURI();
+
+  if (content->IsInAnonymousSubtree()) {
+    // content is in a shadow tree.
+    // Depending on where this url comes from, choose either the baseURI of the
+    // original document of content or the root document of the shadow tree
+    // to resolve URI.
+    if (!aURL->EqualsExceptRef(baseURI))
+      baseURI = content->OwnerDoc()->GetBaseURI();
+  }
+
+  return aURL->ResolveLocalRef(baseURI);
+}
+
 already_AddRefed<nsIURI>
 nsSVGEffects::GetMarkerURI(nsIFrame* aFrame,
                            FragmentOrURL nsStyleSVG::* aMarker)
@@ -931,8 +961,8 @@ nsSVGEffects::GetClipPathURI(nsIFrame* aFrame)
   const nsStyleSVGReset* svgResetStyle = aFrame->StyleSVGReset();
   MOZ_ASSERT(svgResetStyle->mClipPath.GetType() == StyleShapeSourceType::URL);
 
-  FragmentOrURL* url = svgResetStyle->mClipPath.GetURL();
-  return ResolveFragmentOrURL(aFrame, url);
+  css::URLValue* url = svgResetStyle->mClipPath.GetURL();
+  return ResolveURLUsingLocalRef(aFrame, url);
 }
 
 already_AddRefed<nsIURI>
