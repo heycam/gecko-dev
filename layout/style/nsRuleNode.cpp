@@ -6743,6 +6743,28 @@ struct BackgroundItemComputer<nsCSSValueList, FragmentOrURL>
   }
 };
 
+template <>
+struct BackgroundItemComputer<nsCSSValueList, RefPtr<css::URLValueData>>
+{
+  static void ComputeValue(nsStyleContext* aStyleContext,
+                           const nsCSSValueList* aSpecifiedValue,
+                           RefPtr<css::URLValueData>& aComputedValue,
+                           RuleNodeCacheConditions& aConditions)
+  {
+    switch (aSpecifiedValue->mValue.GetUnit()) {
+      case eCSSUnit_Null:
+        break;
+      case eCSSUnit_URL:
+      case eCSSUnit_Image:
+        aComputedValue = aSpecifiedValue->mValue.GetURLOrImageStructValue();
+        break;
+      default:
+        aComputedValue = nullptr;
+        break;
+    }
+  }
+};
+
 /* Helper function for ComputePositionValue.
  * This function computes a single PositionCoord from two nsCSSValue objects,
  * which represent an edge and an offset from that edge.
@@ -10080,7 +10102,8 @@ nsRuleNode::ComputeSVGResetData(void* aStartStruct,
                     svgReset->mMask.mLayers,
                     parentSVGReset->mMask.mLayers,
                     &nsStyleImageLayers::Layer::mSourceURI,
-                    FragmentOrURL(), parentSVGReset->mMask.mImageCount,
+                    RefPtr<css::URLValueData>(),
+                    parentSVGReset->mMask.mImageCount,
                     svgReset->mMask.mImageCount,
                     maxItemCount, rebuild, conditions);
 
