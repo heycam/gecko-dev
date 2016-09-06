@@ -889,36 +889,6 @@ nsSVGEffects::InvalidateDirectRenderingObservers(nsIFrame* aFrame, uint32_t aFla
 }
 
 static already_AddRefed<nsIURI>
-ResolveFragmentOrURL(nsIFrame* aFrame, const FragmentOrURL* aFragmentOrURL)
-{
-  MOZ_ASSERT(aFrame);
-
-  if (!aFragmentOrURL) {
-    return nullptr;
-  }
-
-  // Non-local-reference URL.
-  if (!aFragmentOrURL->IsLocalRef()) {
-    nsCOMPtr<nsIURI> result = aFragmentOrURL->GetSourceURL();
-    return result.forget();
-  }
-
-  nsIContent* content = aFrame->GetContent();
-  nsCOMPtr<nsIURI> baseURI = content->GetBaseURI();
-
-  if (content->IsInAnonymousSubtree()) {
-    // content is in a shadow tree.
-    // Depending on where this url comes from, choose either the baseURI of the
-    // original document of content or the root document of the shadow tree
-    // to resolve URI.
-    if (!aFragmentOrURL->EqualsExceptRef(baseURI))
-      baseURI = content->OwnerDoc()->GetBaseURI();
-  }
-
-  return aFragmentOrURL->Resolve(baseURI);
-}
-
-static already_AddRefed<nsIURI>
 ResolveURLUsingLocalRef(nsIFrame* aFrame, const css::URLValueData* aURL)
 {
   MOZ_ASSERT(aFrame);
