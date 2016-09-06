@@ -817,6 +817,14 @@ public:
   inline const nsCSSValueTriplet& GetTripletValue() const;
 
 
+  mozilla::css::URLValueData* GetURLOrImageStructValue() const
+  {
+    if (mUnit == eCSSUnit_URL) {
+      return GetURLStructValue();
+    }
+    return GetImageStructValue();
+  }
+
   mozilla::css::URLValue* GetURLStructValue() const
   {
     // Not allowing this for Image values, because if the caller takes
